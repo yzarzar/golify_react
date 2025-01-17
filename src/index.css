@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply transition-colors duration-theme;
+  }
+  
+  body {
+    @apply bg-primary-50 font-sans dark:bg-dark-bg-primary;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 rounded-md transition-colors duration-theme
+    bg-accent-DEFAULT hover:bg-accent-dark text-white
+    dark:bg-accent-dark dark:hover:bg-accent-light;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 rounded-md transition-colors duration-theme
+    bg-primary-200 hover:bg-primary-300 text-primary-800
+    dark:bg-dark-bg-tertiary dark:hover:bg-dark-bg-secondary dark:text-dark-text-primary;
+  }
+
+  .card {
+    @apply p-6 rounded-lg shadow-sm transition-colors duration-theme
+    bg-white border border-primary-100
+    dark:bg-dark-bg-secondary dark:border-dark-border;
+  }
+
+  .text-primary {
+    @apply text-primary-900 dark:text-dark-text-primary transition-colors duration-theme;
+  }
+
+  .text-secondary {
+    @apply text-primary-600 dark:text-dark-text-secondary transition-colors duration-theme;
+  }
+}
