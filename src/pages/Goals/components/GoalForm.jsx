@@ -28,12 +28,12 @@ const GoalForm = ({
           onChange={onChange}
           className={`w-full p-2 border rounded ${
             darkMode
-              ? "bg-dark-bg-secondary border-gray-600 text-dark-text-primary"
+              ? "border-gray-600 bg-dark-bg-secondary text-dark-text-primary"
               : "bg-white border-gray-300"
           }`}
         />
         {formErrors.title && (
-          <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
+          <p className="mt-1 text-sm text-red-500">{formErrors.title}</p>
         )}
       </div>
 
@@ -51,12 +51,12 @@ const GoalForm = ({
           onChange={onChange}
           className={`w-full p-2 border rounded ${
             darkMode
-              ? "bg-dark-bg-secondary border-gray-600 text-dark-text-primary"
+              ? "border-gray-600 bg-dark-bg-secondary text-dark-text-primary"
               : "bg-white border-gray-300"
           }`}
         />
         {formErrors.description && (
-          <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+          <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
         )}
       </div>
 
@@ -76,12 +76,12 @@ const GoalForm = ({
             onChange={onChange}
             className={`w-full p-2 border rounded ${
               darkMode
-                ? "bg-dark-bg-secondary border-gray-600 text-dark-text-primary"
+                ? "border-gray-600 bg-dark-bg-secondary text-dark-text-primary"
                 : "bg-white border-gray-300"
             }`}
           />
           {formErrors.start_date && (
-            <p className="text-red-500 text-sm mt-1">{formErrors.start_date}</p>
+            <p className="mt-1 text-sm text-red-500">{formErrors.start_date}</p>
           )}
         </div>
 
@@ -100,12 +100,12 @@ const GoalForm = ({
             onChange={onChange}
             className={`w-full p-2 border rounded ${
               darkMode
-                ? "bg-dark-bg-secondary border-gray-600 text-dark-text-primary"
+                ? "border-gray-600 bg-dark-bg-secondary text-dark-text-primary"
                 : "bg-white border-gray-300"
             }`}
           />
           {formErrors.end_date && (
-            <p className="text-red-500 text-sm mt-1">{formErrors.end_date}</p>
+            <p className="mt-1 text-sm text-red-500">{formErrors.end_date}</p>
           )}
         </div>
       </div>
@@ -125,7 +125,7 @@ const GoalForm = ({
             onChange={onChange}
             className={`w-full p-2 border rounded ${
               darkMode
-                ? "bg-dark-bg-secondary border-gray-600 text-dark-text-primary"
+                ? "border-gray-600 bg-dark-bg-secondary text-dark-text-primary"
                 : "bg-white border-gray-300"
             }`}
           >
@@ -149,7 +149,7 @@ const GoalForm = ({
             onChange={onChange}
             className={`w-full p-2 border rounded ${
               darkMode
-                ? "bg-dark-bg-secondary border-gray-600 text-dark-text-primary"
+                ? "border-gray-600 bg-dark-bg-secondary text-dark-text-primary"
                 : "bg-white border-gray-300"
             }`}
           >

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 import EditGoalForm from "./EditGoalForm";
+import { useNavigate } from "react-router-dom";
 
 const getPriorityStyle = (priority, darkMode) => {
   const baseClasses = "px-2 py-1 text-sm rounded-full ";
@@ -66,6 +67,7 @@ const InfoRow = ({ label, value, className = "", darkMode }) => (
 
 const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
   const { darkMode } = useTheme();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [currentGoal, setCurrentGoal] = useState(goal);
 
@@ -180,9 +182,9 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
                   </div>
                   
                   <div className="p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                       <div className="space-y-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex gap-3 items-center">
                           <div className={`p-2 rounded-lg ${darkMode ? "bg-dark-bg-primary" : "bg-white"}`}>
                             <svg className="w-5 h-5 text-info-light dark:text-info-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -198,7 +200,7 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex gap-3 items-center">
                           <div className={`p-2 rounded-lg ${darkMode ? "bg-dark-bg-primary" : "bg-white"}`}>
                             <svg className="w-5 h-5 text-info-light dark:text-info-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -249,7 +251,7 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
                   </div>
                   
                   <div className="p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-4">
                         <div>
                           <div className={`text-xs font-medium mb-1.5 ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`}>
@@ -313,6 +315,16 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
                     }`}
                 >
                   Close
+                </button>
+                <button
+                  onClick={() => navigate('/goal-hub')}
+                  className={`px-4 py-2 flex items-center gap-2 rounded-md transition-colors duration-theme
+                    ${darkMode ? "text-white bg-info-dark hover:bg-info-dark/90" : "text-white bg-info-light hover:bg-info-light/90"}`}
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Go to Goal Hub</span>
                 </button>
                 <button
                   onClick={handleEdit}

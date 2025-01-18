@@ -12,6 +12,7 @@ import Tasks from './pages/Tasks/Tasks';
 import Achievements from './pages/Achievements/Achievements';
 import Progress from './pages/Progress/Progress';
 import { useAuth } from './contexts/AuthContext';
+import GoalHub from './pages/GoalHub/GoalHub';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -44,6 +45,7 @@ const App = () => {
                       <Route path="/achievements" element={<Achievements />} />
                       <Route path="/progress" element={<Progress />} />
                       <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/goal-hub" element={<GoalHub />} />
                     </Routes>
                   </MainLayout>
                 </ProtectedRoute>
