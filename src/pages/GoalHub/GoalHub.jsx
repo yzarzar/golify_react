@@ -119,7 +119,7 @@ const GoalHub = () => {
   const handleAddMilestone = () => {
     const newMilestone = {
       id: Date.now(),
-      title: '',
+      title: 'Untitle',
       completed: false,
       dueDate: '',
       expanded: true,
@@ -128,7 +128,7 @@ const GoalHub = () => {
       tasks: []
     };
     setMilestones([...milestones, newMilestone]);
-    handleMilestoneEdit(newMilestone.id, 'title', '');
+    handleMilestoneEdit(newMilestone.id, 'title', 'Untitle');
   };
 
   const handleAddTask = (milestoneId) => {
@@ -140,7 +140,7 @@ const GoalHub = () => {
             ...milestone.tasks,
             {
               id: Date.now(),
-              title: '',
+              title: 'Untitle',
               completed: false,
               priority: 'Medium',
               dueDate: ''

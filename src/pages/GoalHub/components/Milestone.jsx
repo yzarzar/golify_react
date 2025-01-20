@@ -85,7 +85,7 @@ const Milestone = ({
   onToggleComplete,
   onDelete,
   onEdit,
-  onTaskAdd,
+  onAddTask,
   onTaskToggleComplete,
   onTaskDelete,
   onTaskEdit,
@@ -703,7 +703,7 @@ const Milestone = ({
                       onTaskToggleComplete(milestone.id, task.id)
                     }
                     onDelete={() => onTaskDelete(milestone.id, task.id)}
-                    onEdit={(field, value) => onTaskEdit(task.id, field, value)}
+                    onEdit={(updatedTask) => onTaskEdit(task.id, 'title', updatedTask.title)}
                     isEditing={editingTaskId === task.id}
                     editValue={taskEditValue}
                     onEditChange={onTaskEditChange}
@@ -714,7 +714,7 @@ const Milestone = ({
 
               <Button
                 startIcon={<AddIcon />}
-                onClick={() => onTaskAdd(milestone.id)}
+                onClick={() => onAddTask(milestone.id)}
                 sx={{
                   mt: 2,
                   color: theme.palette.text.secondary,

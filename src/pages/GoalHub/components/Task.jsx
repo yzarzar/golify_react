@@ -16,18 +16,20 @@ import {
   ListItemIcon,
   ListItemText,
   Popover,
+  Button,
 } from '@mui/material';
 import { 
   CheckCircle as CheckCircleIcon,
   RadioButtonUnchecked as UncheckedIcon,
   Flag as FlagIcon,
-  CalendarToday as CalendarIcon,
+  CalendarMonth as CalendarIcon,
   Delete as DeleteIcon,
   AccessTime as TimeIcon,
   Clear as ClearIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DatePicker, TimePicker, DateTimePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { format, isAfter, isBefore, isToday, isSameDay } from 'date-fns';
 
 const priorityColors = {
@@ -75,44 +77,80 @@ const priorityColors = {
 
 const Task = ({ 
   task, 
-  onToggleComplete, 
-  onDelete, 
+  onToggleComplete,
+  onDelete,
   onEdit,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(task.title);
+  const [isTitleEditing, setIsTitleEditing] = useState(task.title === '');
+  const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
+  const [titleValue, setTitleValue] = useState(task.title);
+  const [descriptionValue, setDescriptionValue] = useState(task.description || '');
+  const [showEditHint, setShowEditHint] = useState(false);
+  const [showDescriptionHint, setShowDescriptionHint] = useState(false);
   const [dateAnchorEl, setDateAnchorEl] = useState(null);
   const [timeAnchorEl, setTimeAnchorEl] = useState(null);
   const [priorityAnchorEl, setPriorityAnchorEl] = useState(null);
-  const [showEditHint, setShowEditHint] = useState(false);
   
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const colors = priorityColors[isDark ? 'dark' : 'light'];
 
-  const handleEditStart = () => {
-    setIsEditing(true);
-    setEditValue(task.title);
+  const handleTitleEditStart = () => {
+    setIsTitleEditing(true);
+    setTitleValue(task.title);
   };
 
-  const handleEditChange = (e) => {
-    setEditValue(e.target.value);
+  const handleTitleChange = (e) => {
+    setTitleValue(e.target.value);
   };
 
-  const handleEditComplete = () => {
-    if (editValue.trim() !== task.title) {
-      onEdit('title', editValue.trim());
+  const handleTitleComplete = () => {
+    const newTitle = titleValue.trim();
+    if (newTitle === '') {
+      onDelete();
+    } else if (newTitle !== task.title) {
+      onEdit({ ...task, title: newTitle });
     }
-    setIsEditing(false);
+    setIsTitleEditing(false);
   };
 
-  const handleKeyDown = (e) => {
+  const handleTitleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleEditComplete();
+      handleTitleComplete();
     } else if (e.key === 'Escape') {
-      setEditValue(task.title);
-      setIsEditing(false);
+      if (task.title === '') {
+        onDelete();
+      } else {
+        setTitleValue(task.title);
+        setIsTitleEditing(false);
+      }
+    }
+  };
+
+  const handleDescriptionEditStart = () => {
+    setIsDescriptionEditing(true);
+    setDescriptionValue(task.description || '');
+  };
+
+  const handleDescriptionChange = (e) => {
+    setDescriptionValue(e.target.value);
+  };
+
+  const handleDescriptionComplete = () => {
+    if (descriptionValue.trim() !== task.description) {
+      onEdit({ ...task, description: descriptionValue.trim() });
+    }
+    setIsDescriptionEditing(false);
+  };
+
+  const handleDescriptionKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleDescriptionComplete();
+    } else if (e.key === 'Escape') {
+      setDescriptionValue(task.description || '');
+      setIsDescriptionEditing(false);
     }
   };
 
@@ -125,15 +163,11 @@ const Task = ({
   };
 
   const handleDateChange = (newDate) => {
-    if (newDate) {
-      onEdit('dueDate', newDate.toISOString());
-    }
+    const currentDate = task.dueDate ? new Date(task.dueDate) : new Date();
+    const updatedDate = new Date(newDate);
+    updatedDate.setHours(currentDate.getHours(), currentDate.getMinutes());
+    onEdit({ ...task, dueDate: updatedDate.toISOString() });
     handleDateClose();
-  };
-
-  const handleClearDate = (event) => {
-    event.stopPropagation();
-    onEdit('dueDate', null);
   };
 
   const handleTimeClick = (event) => {
@@ -145,18 +179,16 @@ const Task = ({
   };
 
   const handleTimeChange = (newTime) => {
-    if (!task.dueDate) {
-      // If no date is set, use today's date with the selected time
-      const today = new Date('2025-01-20T12:43:39+06:30');
-      today.setHours(newTime.getHours(), newTime.getMinutes());
-      onEdit('dueDate', today.toISOString());
-    } else {
-      // Keep the existing date but update the time
-      const updatedDate = new Date(task.dueDate);
-      updatedDate.setHours(newTime.getHours(), newTime.getMinutes());
-      onEdit('dueDate', updatedDate.toISOString());
-    }
+    const [hours, minutes] = newTime.split(':');
+    const updatedDate = task.dueDate ? new Date(task.dueDate) : new Date();
+    updatedDate.setHours(parseInt(hours), parseInt(minutes));
+    onEdit({ ...task, dueDate: updatedDate.toISOString() });
     handleTimeClose();
+  };
+
+  const handleClearDate = (event) => {
+    event.stopPropagation();
+    onEdit({ ...task, dueDate: null });
   };
 
   const handlePriorityClick = (event) => {
@@ -168,7 +200,7 @@ const Task = ({
   };
 
   const handlePriorityChange = (newPriority) => {
-    onEdit('priority', newPriority);
+    onEdit({ ...task, priority: newPriority });
     handlePriorityClose();
   };
 
@@ -202,9 +234,9 @@ const Task = ({
   const isPriorityMenuOpen = Boolean(priorityAnchorEl);
 
   const priorityOptions = [
-    { value: 'High', color: colors.High.main, description: 'Urgent and important' },
-    { value: 'Medium', color: colors.Medium.main, description: 'Important but not urgent' },
-    { value: 'Low', color: colors.Low.main, description: 'Can be done later' },
+    { value: 'High', color: colors.High.main, icon: <FlagIcon /> },
+    { value: 'Medium', color: colors.Medium.main, icon: <FlagIcon /> },
+    { value: 'Low', color: colors.Low.main, icon: <FlagIcon /> },
   ];
 
   return (
@@ -215,6 +247,7 @@ const Task = ({
           display: 'flex',
           alignItems: 'flex-start',
           p: 1.5,
+          pl: '16px',
           borderRadius: '10px',
           backgroundColor: task.completed 
             ? isDark 
@@ -227,7 +260,17 @@ const Task = ({
             : colors[task.priority].border,
           transition: 'all 0.2s ease-in-out',
           position: 'relative',
-          overflow: 'visible',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: '4px',
+            background: colors[task.priority].gradient,
+            opacity: task.completed ? 0.3 : 0.8,
+          },
           '&:hover': {
             transform: 'translateY(-2px)',
             boxShadow: isDark 
@@ -245,362 +288,535 @@ const Task = ({
           }
         }}
       >
-        <Box
-          sx={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: '3px',
-            background: colors[task.priority].gradient,
-            opacity: task.completed ? 0.3 : 0.8
-          }}
-        />
-        
         <IconButton
           size="small"
           onClick={onToggleComplete}
-          sx={{ 
-            mr: 1.5,
-            color: task.completed ? colors[task.priority].main : theme.palette.action.disabled,
-            transition: 'all 0.2s',
+          sx={{
+            color: task.completed
+              ? colors[task.priority].main
+              : theme.palette.text.secondary,
+            padding: '8px',
             '&:hover': {
-              transform: 'scale(1.1)',
-              color: colors[task.priority].main
-            }
+              backgroundColor: colors[task.priority].light,
+              color: colors[task.priority].main,
+            },
           }}
         >
-          {task.completed ? <CheckCircleIcon /> : <UncheckedIcon />}
+          {task.completed ? (
+            <CheckCircleIcon sx={{ fontSize: '1.25rem' }} />
+          ) : (
+            <UncheckedIcon sx={{ fontSize: '1.25rem' }} />
+          )}
         </IconButton>
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Stack spacing={1}>
-            <Box
-              onMouseEnter={() => setShowEditHint(true)}
-              onMouseLeave={() => setShowEditHint(false)}
-              sx={{ position: 'relative' }}
-            >
-              {isEditing ? (
-                <ClickAwayListener onClickAway={handleEditComplete}>
-                  <InputBase
-                    fullWidth
-                    value={editValue}
-                    onChange={handleEditChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Enter task title..."
-                    sx={{
-                      '& input': {
-                        padding: '6px 8px',
-                        borderRadius: '6px',
-                        backgroundColor: theme.palette.action.hover,
-                        fontSize: '0.95rem',
-                        color: theme.palette.text.primary,
-                        transition: 'all 0.2s',
-                        '&::placeholder': {
-                          color: theme.palette.text.secondary,
-                          opacity: 0.7,
-                        },
-                        '&:hover, &:focus': {
-                          backgroundColor: theme.palette.action.selected,
-                        }
-                      }
-                    }}
-                    autoFocus
-                  />
-                </ClickAwayListener>
-              ) : (
-                <Typography
-                  onClick={handleEditStart}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {isTitleEditing ? (
+              <ClickAwayListener onClickAway={handleTitleComplete}>
+                <InputBase
+                  fullWidth
+                  value={titleValue}
+                  onChange={handleTitleChange}
+                  onKeyDown={handleTitleKeyDown}
+                  autoFocus
                   sx={{
-                    cursor: 'text',
-                    padding: '6px 8px',
+                    flex: 1,
+                    '& input': {
+                      color: theme.palette.text.primary,
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      backgroundColor: theme.palette.action.hover,
+                      transition: 'all 0.2s',
+                      '&:hover, &:focus': {
+                        backgroundColor: theme.palette.action.selected,
+                      },
+                    },
+                  }}
+                />
+              </ClickAwayListener>
+            ) : (
+              <Typography
+                variant="body2"
+                onClick={handleTitleEditStart}
+                onMouseEnter={() => setShowEditHint(true)}
+                onMouseLeave={() => setShowEditHint(false)}
+                sx={{
+                  flex: 1,
+                  color: task.completed ? theme.palette.text.secondary : theme.palette.text.primary,
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  textDecoration: task.completed ? 'line-through' : 'none',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  cursor: 'text',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  minWidth: 0,
+                  '&:hover': {
+                    backgroundColor: theme.palette.action.hover,
+                  },
+                }}
+              >
+                <span style={{ 
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {task.title}
+                </span>
+                {showEditHint && (
+                  <Typography
+                    component="span"
+                    sx={{
+                      ml: 1,
+                      fontSize: '0.75rem',
+                      color: theme.palette.primary.main,
+                      opacity: 0,
+                      transition: 'opacity 0.2s',
+                      whiteSpace: 'nowrap',
+                      '&:hover': {
+                        opacity: 0.7,
+                      },
+                    }}
+                  >
+                    Click to edit
+                  </Typography>
+                )}
+              </Typography>
+            )}
+          </Box>
+
+          <Box
+            onMouseEnter={() => setShowDescriptionHint(true)}
+            onMouseLeave={() => setShowDescriptionHint(false)}
+            sx={{ 
+              position: 'relative',
+              mt: task.description || isDescriptionEditing ? 1.5 : 0.5,
+              mb: task.description || isDescriptionEditing ? 1.5 : 0.5,
+            }}
+          >
+            {isDescriptionEditing ? (
+              <ClickAwayListener onClickAway={handleDescriptionComplete}>
+                <InputBase
+                  fullWidth
+                  multiline
+                  value={descriptionValue}
+                  onChange={handleDescriptionChange}
+                  onKeyDown={handleDescriptionKeyDown}
+                  placeholder="Add a description..."
+                  sx={{
+                    '& textarea': {
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: theme.palette.action.hover,
+                      fontSize: '0.875rem',
+                      color: theme.palette.text.primary,
+                      lineHeight: 1.6,
+                      transition: 'all 0.2s',
+                      minHeight: '60px',
+                      '&::placeholder': {
+                        color: theme.palette.text.secondary,
+                        opacity: 0.7,
+                      },
+                      '&:hover': {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                      '&:focus': {
+                        backgroundColor: theme.palette.action.selected,
+                      }
+                    }
+                  }}
+                  autoFocus
+                />
+              </ClickAwayListener>
+            ) : task.description ? (
+              <Box
+                onClick={handleDescriptionEditStart}
+                sx={{
+                  cursor: 'text',
+                  position: 'relative',
+                  '&:hover': {
+                    '& .description-edit-hint': {
+                      opacity: 1,
+                    }
+                  }
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    padding: '8px 12px',
                     borderRadius: '6px',
-                    fontSize: '0.95rem',
                     color: task.completed
                       ? theme.palette.text.secondary
                       : theme.palette.text.primary,
-                    textDecoration: task.completed ? 'line-through' : 'none',
-                    opacity: task.completed ? 0.7 : 1,
+                    opacity: task.completed ? 0.7 : 0.9,
+                    fontSize: '0.875rem',
+                    lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap',
                     transition: 'all 0.2s',
                     '&:hover': {
                       backgroundColor: theme.palette.action.hover,
                     },
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
                   }}
                 >
-                  <span>{task.title}</span>
-                  {showEditHint && (
-                    <Typography
-                      component="span"
-                      variant="caption"
-                      sx={{
-                        ml: 1,
-                        color: theme.palette.text.secondary,
-                        opacity: 0.7,
-                      }}
-                    >
-                      Click to edit
-                    </Typography>
-                  )}
+                  {task.description}
                 </Typography>
-              )}
-            </Box>
+                {showDescriptionHint && (
+                  <Typography
+                    className="description-edit-hint"
+                    variant="caption"
+                    sx={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '8px',
+                      color: theme.palette.text.secondary,
+                      opacity: 0,
+                      transition: 'opacity 0.2s',
+                      backgroundColor: theme.palette.background.paper,
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      boxShadow: theme.shadows[1],
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    Click to edit
+                  </Typography>
+                )}
+              </Box>
+            ) : (
+              <Button
+                onClick={handleDescriptionEditStart}
+                startIcon={<AddIcon sx={{ fontSize: '1rem' }} />}
+                sx={{
+                  color: theme.palette.text.secondary,
+                  textTransform: 'none',
+                  padding: '4px 8px',
+                  minWidth: 0,
+                  fontSize: '0.875rem',
+                  fontWeight: 400,
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    color: theme.palette.text.primary,
+                  }
+                }}
+              >
+                Add description
+              </Button>
+            )}
+          </Box>
 
-            <Stack
-              direction="row"
-              spacing={1}
-              className="items-center task-actions"
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{
+              opacity: task.dueDate || task.priority !== 'Low' ? 1 : 0,
+              transform: task.dueDate || task.priority !== 'Low' ? 'none' : 'translateY(10px)',
+              transition: 'all 0.2s ease-in-out',
+              height: task.dueDate || task.priority !== 'Low' ? 'auto' : 0,
+              marginTop: task.description || isDescriptionEditing ? 0 : 1,
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 1,
+            }}
+          >
+            <Stack 
+              direction="row" 
+              spacing={0.5}
               sx={{
-                opacity: 0,
-                transform: 'translateX(-10px)',
-                transition: 'all 0.2s ease-in-out',
+                flexGrow: 1,
+                minWidth: 0,
+                flexWrap: 'wrap',
+                gap: 0.5,
               }}
             >
-              <Stack direction="row" spacing={0.5}>
-                <Tooltip
-                  title={
+              <Tooltip
+                title={
+                  task.dueDate
+                    ? `Date: ${format(new Date(task.dueDate), 'MMMM d, yyyy')}`
+                    : 'Set date'
+                }
+                arrow
+              >
+                <Chip
+                  size="small"
+                  icon={<CalendarIcon sx={{ fontSize: '0.875rem' }} />}
+                  label={
                     task.dueDate
-                      ? `Date: ${format(new Date(task.dueDate), 'MMMM d, yyyy')}`
-                      : 'Set date'
+                      ? format(new Date(task.dueDate), 'MMM d')
+                      : 'Add date'
                   }
-                  arrow
-                >
-                  <Chip
-                    size="small"
-                    icon={<CalendarIcon sx={{ fontSize: '0.875rem' }} />}
-                    deleteIcon={
-                      task.dueDate && (
-                        <ClearIcon
-                          sx={{
-                            fontSize: '0.875rem',
-                            '&:hover': {
-                              color: theme.palette.error.main,
-                            },
-                          }}
-                        />
-                      )
-                    }
-                    label={
-                      task.dueDate
-                        ? format(new Date(task.dueDate), 'MMM d')
-                        : 'Add date'
-                    }
-                    onClick={handleDateClick}
-                    onDelete={task.dueDate ? handleClearDate : undefined}
-                    variant="outlined"
-                    sx={{
-                      borderRadius: '6px',
-                      borderColor: task.dueDate ? getDueDateColor() : theme.palette.divider,
-                      color: getDueDateColor(),
-                      backgroundColor: 'transparent',
-                      '& .MuiChip-deleteIcon': {
-                        color: 'inherit',
-                        '&:hover': {
-                          color: `${theme.palette.error.main} !important`,
-                        },
-                      },
-                      '&:hover': {
-                        borderColor: task.dueDate ? getDueDateColor() : theme.palette.primary.main,
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    }}
-                  />
-                </Tooltip>
+                  onClick={handleDateClick}
+                  onDelete={task.dueDate ? handleClearDate : undefined}
+                  variant="outlined"
+                  sx={{
+                    maxWidth: '120px',
+                    height: '24px',
+                    '& .MuiChip-label': {
+                      px: 1,
+                      fontSize: '0.75rem',
+                    },
+                    '& .MuiChip-icon': {
+                      ml: 0.75,
+                    },
+                    borderRadius: '4px',
+                    borderColor: task.dueDate ? getDueDateColor() : theme.palette.divider,
+                    color: getDueDateColor(),
+                    backgroundColor: 'transparent',
+                    '&:hover': {
+                      borderColor: task.dueDate ? getDueDateColor() : theme.palette.primary.main,
+                      backgroundColor: theme.palette.action.hover,
+                      cursor: 'pointer',
+                    },
+                  }}
+                />
+              </Tooltip>
 
-                <Tooltip
-                  title={
-                    task.dueDate
-                      ? `Time: ${format(new Date(task.dueDate), 'h:mm a')}`
-                      : 'Set time'
-                  }
-                  arrow
-                >
-                  <Chip
-                    size="small"
-                    icon={<TimeIcon sx={{ fontSize: '0.875rem' }} />}
-                    label={
-                      task.dueDate
-                        ? format(new Date(task.dueDate), 'h:mm a')
-                        : 'Add time'
-                    }
-                    onClick={handleTimeClick}
-                    variant="outlined"
-                    sx={{
-                      borderRadius: '6px',
-                      borderColor: task.dueDate ? getDueDateColor() : theme.palette.divider,
-                      color: getDueDateColor(),
-                      backgroundColor: 'transparent',
-                      '&:hover': {
-                        borderColor: task.dueDate ? getDueDateColor() : theme.palette.primary.main,
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    }}
-                  />
-                </Tooltip>
-              </Stack>
-              <IconButton
-                size="small"
-                onClick={onDelete}
-                sx={{
-                  color: isDark ? 'rgba(255, 255, 255, 0.7)' : theme.palette.text.secondary,
-                  '&:hover': {
-                    color: isDark ? '#f87171' : '#ef4444',
-                    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2',
+              <Popover
+                open={Boolean(dateAnchorEl)}
+                anchorEl={dateAnchorEl}
+                onClose={handleDateClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'left',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+                PaperProps={{
+                  sx: {
+                    mt: 0.5,
+                    boxShadow: theme.shadows[2],
                   },
                 }}
               >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-          </Stack>
-        </Box>
-
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <Popover
-            open={isDatePickerOpen}
-            anchorEl={dateAnchorEl}
-            onClose={handleDateClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'left',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'left',
-            }}
-            sx={{
-              '& .MuiPaper-root': {
-                borderRadius: '12px',
-                boxShadow: theme.shadows[8],
-              },
-            }}
-          >
-            <DatePicker
-              value={task.dueDate ? new Date(task.dueDate) : null}
-              onChange={handleDateChange}
-              minDate={new Date('2025-01-20T12:43:39+06:30')}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  sx: { display: 'none' },
-                },
-                day: {
-                  sx: {
-                    '&.Mui-selected': {
-                      backgroundColor: colors[task.priority].main,
-                      '&:hover': {
-                        backgroundColor: colors[task.priority].main,
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    value={task.dueDate ? new Date(task.dueDate) : null}
+                    onChange={handleDateChange}
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        sx: { m: 1, minWidth: 220 },
                       },
-                    },
-                  },
-                },
-              }}
-            />
-          </Popover>
+                    }}
+                  />
+                </LocalizationProvider>
+              </Popover>
 
-          <Popover
-            open={isTimePickerOpen}
-            anchorEl={timeAnchorEl}
-            onClose={handleTimeClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'left',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'left',
-            }}
-            sx={{
-              '& .MuiPaper-root': {
-                borderRadius: '12px',
-                boxShadow: theme.shadows[8],
-              },
-            }}
-          >
-            <TimePicker
-              value={task.dueDate ? new Date(task.dueDate) : null}
-              onChange={handleTimeChange}
-              ampm={true}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  sx: { display: 'none' },
-                },
-              }}
-            />
-          </Popover>
-        </LocalizationProvider>
-
-        <Menu
-          anchorEl={priorityAnchorEl}
-          open={isPriorityMenuOpen}
-          onClose={handlePriorityClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
-          PaperProps={{
-            elevation: 8,
-            sx: {
-              mt: 1,
-              borderRadius: '12px',
-              minWidth: 220,
-              '& .MuiMenuItem-root': {
-                px: 2,
-                py: 1.5,
-                borderRadius: '8px',
-                mx: 1,
-                my: 0.5,
-              },
-            },
-          }}
-        >
-          {priorityOptions.map((option) => (
-            <MenuItem
-              key={option.value}
-              onClick={() => handlePriorityChange(option.value)}
-              selected={task.priority === option.value}
-              sx={{
-                transition: 'all 0.2s',
-                '&:hover': {
-                  backgroundColor: `${option.color}15`,
-                },
-                ...(task.priority === option.value && {
-                  backgroundColor: `${option.color}15 !important`,
-                }),
-              }}
-            >
-              <ListItemIcon>
-                <FlagIcon
+              <Tooltip
+                title={
+                  task.dueDate
+                    ? `Time: ${format(new Date(task.dueDate), 'h:mm a')}`
+                    : 'Set time'
+                }
+                arrow
+              >
+                <Chip
+                  size="small"
+                  icon={<TimeIcon sx={{ fontSize: '0.875rem' }} />}
+                  label={
+                    task.dueDate
+                      ? format(new Date(task.dueDate), 'h:mm a')
+                      : 'Add time'
+                  }
+                  onClick={handleTimeClick}
+                  variant="outlined"
                   sx={{
-                    color: option.color,
-                    transition: 'transform 0.2s',
-                    transform: task.priority === option.value ? 'scale(1.2)' : 'scale(1)',
+                    maxWidth: '110px',
+                    height: '24px',
+                    '& .MuiChip-label': {
+                      px: 1,
+                      fontSize: '0.75rem',
+                    },
+                    '& .MuiChip-icon': {
+                      ml: 0.75,
+                    },
+                    borderRadius: '4px',
+                    borderColor: task.dueDate ? getDueDateColor() : theme.palette.divider,
+                    color: getDueDateColor(),
+                    backgroundColor: 'transparent',
+                    '&:hover': {
+                      borderColor: task.dueDate ? getDueDateColor() : theme.palette.primary.main,
+                      backgroundColor: theme.palette.action.hover,
+                      cursor: 'pointer',
+                    },
                   }}
                 />
-              </ListItemIcon>
-              <ListItemText
-                primary={option.value}
-                secondary={option.description}
-                primaryTypographyProps={{
+              </Tooltip>
+
+              <Popover
+                open={Boolean(timeAnchorEl)}
+                anchorEl={timeAnchorEl}
+                onClose={handleTimeClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'left',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+                PaperProps={{
                   sx: {
-                    color: option.color,
-                    fontWeight: task.priority === option.value ? 600 : 400,
+                    mt: 0.5,
+                    boxShadow: theme.shadows[2],
                   },
                 }}
-                secondaryTypographyProps={{
-                  sx: { fontSize: '0.75rem' },
-                }}
-              />
-            </MenuItem>
-          ))}
-        </Menu>
+              >
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <TimePicker
+                    value={task.dueDate ? new Date(task.dueDate) : null}
+                    onChange={(newTime) => {
+                      if (newTime) {
+                        const timeString = format(newTime, 'HH:mm');
+                        handleTimeChange(timeString);
+                      }
+                    }}
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        sx: { m: 1, minWidth: 120 },
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </Popover>
+
+              <Tooltip title={`Priority: ${task.priority}`} arrow>
+                <Chip
+                  size="small"
+                  icon={
+                    <FlagIcon
+                      sx={{
+                        fontSize: '0.875rem',
+                        color: colors[task.priority].main,
+                      }}
+                    />
+                  }
+                  label={task.priority}
+                  onClick={handlePriorityClick}
+                  variant="outlined"
+                  sx={{
+                    maxWidth: '100px',
+                    height: '24px',
+                    '& .MuiChip-label': {
+                      px: 1,
+                      fontSize: '0.75rem',
+                    },
+                    '& .MuiChip-icon': {
+                      ml: 0.75,
+                    },
+                    borderRadius: '4px',
+                    backgroundColor: colors[task.priority].light,
+                    borderColor: colors[task.priority].border,
+                    color: colors[task.priority].main,
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: colors[task.priority].light,
+                      opacity: 0.9,
+                      transform: 'translateY(-1px)',
+                      cursor: 'pointer',
+                    },
+                  }}
+                />
+              </Tooltip>
+            </Stack>
+
+            <Popover
+              open={Boolean(priorityAnchorEl)}
+              anchorEl={priorityAnchorEl}
+              onClose={handlePriorityClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+              }}
+              PaperProps={{
+                sx: {
+                  mt: 0.5,
+                  boxShadow: theme.shadows[2],
+                  '& .MuiMenuItem-root': {
+                    px: 1.5,
+                    py: 0.75,
+                    minWidth: 120,
+                  },
+                },
+              }}
+            >
+              {priorityOptions.map((option) => (
+                <MenuItem
+                  key={option.value}
+                  onClick={() => handlePriorityChange(option.value)}
+                  selected={task.priority === option.value}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: `${colors[option.value].light}`,
+                    },
+                    ...(task.priority === option.value && {
+                      backgroundColor: `${colors[option.value].light} !important`,
+                    }),
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      color: colors[option.value].main,
+                      minWidth: 28,
+                    }}
+                  >
+                    {option.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={option.value}
+                    sx={{
+                      '& .MuiTypography-root': {
+                        fontSize: '0.875rem',
+                        color: colors[option.value].main,
+                        fontWeight: task.priority === option.value ? 600 : 400,
+                      },
+                    }}
+                  />
+                </MenuItem>
+              ))}
+            </Popover>
+
+            <IconButton
+              size="small"
+              onClick={onDelete}
+              sx={{
+                color: theme.palette.text.secondary,
+                opacity: 0,
+                transform: 'translateX(-10px)',
+                transition: 'all 0.2s ease-in-out',
+                flexShrink: 0,
+                width: '24px',
+                height: '24px',
+                '&:hover': {
+                  color: theme.palette.error.main,
+                  backgroundColor: `${theme.palette.error.main}15`,
+                },
+              }}
+              className="task-actions"
+            >
+              <DeleteIcon sx={{ fontSize: '1rem' }} />
+            </IconButton>
+          </Stack>
+        </Box>
       </Paper>
     </Zoom>
   );
