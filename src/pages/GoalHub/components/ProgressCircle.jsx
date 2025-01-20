@@ -71,17 +71,27 @@ const ProgressCircle = ({ progress }) => {
             mb: 1, 
             fontSize: 44 
           }} />
-          <Typography variant="h1" sx={{ 
-            fontWeight: 'bold', 
-            color: darkMode ? '#42a5f5' : '#1976d2',
-            lineHeight: 1 
-          }}>
-            {progress}%
+          <Typography
+            variant="h3"
+            component="div"
+            sx={{ 
+              fontSize: '2.5rem',  
+              fontWeight: 600,
+              color: darkMode ? '#fff' : '#1976d2',
+              mb: -0.5 
+            }}
+          >
+            {`${Math.round(progress)}%`}
           </Typography>
-          <Typography variant="h6" sx={{ 
-            color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-            mt: 1 
-          }}>
+          <Typography
+            variant="caption"
+            component="div"
+            sx={{
+              fontSize: '0.875rem',
+              color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+              mt: 1
+            }}
+          >
             Completed
           </Typography>
         </Box>

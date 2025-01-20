@@ -2,6 +2,15 @@ import React, { useState } from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { goalApi } from "../../../services/api";
 import { toast } from "react-hot-toast";
+import {
+  Title as TitleIcon,
+  Description as DescriptionIcon,
+  CalendarMonth as CalendarIcon,
+  Flag as FlagIcon,
+  EmojiEvents as TrophyIcon,
+  Edit as EditIcon,
+  Close as CloseIcon,
+} from "@mui/icons-material";
 
 const EditGoalForm = ({ goal, onUpdate, onCancel }) => {
   const { darkMode } = useTheme();
@@ -100,9 +109,27 @@ const EditGoalForm = ({ goal, onUpdate, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Header with Trophy Icon */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className={`p-2 rounded-full ${darkMode ? 'bg-info-dark/10' : 'bg-info-light/10'}`}>
+          <TrophyIcon className={`text-2xl ${darkMode ? 'text-info-dark' : 'text-info-light'}`} />
+        </div>
+        <div>
+          <h3 className={`text-lg font-semibold ${darkMode ? "text-dark-text-primary" : "text-gray-900"}`}>
+            Refine Your Goal
+          </h3>
+          <p className={`text-sm ${darkMode ? "text-dark-text-secondary" : "text-gray-600"}`}>
+            Great goals evolve. Make your adjustments count!
+          </p>
+        </div>
+      </div>
+
       <div className="space-y-4">
         <div>
-          <label className={labelClasses}>Title</label>
+          <div className="flex items-center gap-2 mb-1">
+            <TitleIcon className={`text-sm ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`} />
+            <label className={labelClasses}>Title</label>
+          </div>
           <input
             type="text"
             name="title"
@@ -111,13 +138,16 @@ const EditGoalForm = ({ goal, onUpdate, onCancel }) => {
             className={`${inputClasses} ${
               errors.title ? "border-error-light dark:border-error-dark" : ""
             }`}
-            placeholder="Enter goal title"
+            placeholder="What would you like to achieve?"
           />
           {errors.title && <p className={errorClasses}>{errors.title}</p>}
         </div>
 
         <div>
-          <label className={labelClasses}>Description</label>
+          <div className="flex items-center gap-2 mb-1">
+            <DescriptionIcon className={`text-sm ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`} />
+            <label className={labelClasses}>Description</label>
+          </div>
           <textarea
             name="description"
             value={editedGoal.description}
@@ -128,7 +158,7 @@ const EditGoalForm = ({ goal, onUpdate, onCancel }) => {
                 ? "border-error-light dark:border-error-dark"
                 : ""
             }`}
-            placeholder="Enter goal description"
+            placeholder="Break down your goal into clear, actionable steps..."
           />
           {errors.description && (
             <p className={errorClasses}>{errors.description}</p>
@@ -137,7 +167,10 @@ const EditGoalForm = ({ goal, onUpdate, onCancel }) => {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className={labelClasses}>Start Date</label>
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarIcon className={`text-sm ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`} />
+              <label className={labelClasses}>Start Date</label>
+            </div>
             <input
               type="date"
               name="start_date"
@@ -156,7 +189,10 @@ const EditGoalForm = ({ goal, onUpdate, onCancel }) => {
           </div>
 
           <div>
-            <label className={labelClasses}>End Date</label>
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarIcon className={`text-sm ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`} />
+              <label className={labelClasses}>End Date</label>
+            </div>
             <input
               type="date"
               name="end_date"
@@ -176,7 +212,10 @@ const EditGoalForm = ({ goal, onUpdate, onCancel }) => {
         </div>
 
         <div>
-          <label className={labelClasses}>Priority</label>
+          <div className="flex items-center gap-2 mb-1">
+            <FlagIcon className={`text-sm ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`} />
+            <label className={labelClasses}>Priority</label>
+          </div>
           <select
             name="priority"
             value={editedGoal.priority}
@@ -187,10 +226,10 @@ const EditGoalForm = ({ goal, onUpdate, onCancel }) => {
                 : ""
             }`}
           >
-            <option value="">Select priority</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="">How important is this goal?</option>
+            <option value="low">Low - Keep it on the radar</option>
+            <option value="medium">Medium - Important milestone ahead</option>
+            <option value="high">High - Top priority focus</option>
           </select>
           {errors.priority && (
             <p className={errorClasses}>{errors.priority}</p>
@@ -202,53 +241,25 @@ const EditGoalForm = ({ goal, onUpdate, onCancel }) => {
         <button
           type="button"
           onClick={onCancel}
+          className={`px-4 py-2 rounded-md transition-colors duration-theme
+            ${darkMode
+              ? "text-dark-text-secondary hover:bg-dark-bg-secondary"
+              : "text-gray-500 hover:bg-gray-100"
+            }`}
           disabled={isSubmitting}
-          className={`px-4 py-2 rounded-md transition-all duration-200
-            ${
-              darkMode
-                ? "text-dark-text-primary bg-dark-bg-secondary hover:bg-dark-bg-tertiary"
-                : "text-gray-700 bg-gray-100 hover:bg-gray-200"
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           Cancel
         </button>
         <button
           type="submit"
+          className={`px-4 py-2 rounded-md text-white transition-colors duration-theme
+            ${darkMode
+              ? "bg-info-dark hover:bg-info-dark/90"
+              : "bg-info-light hover:bg-info-light/90"
+            }`}
           disabled={isSubmitting}
-          className={`px-4 py-2 rounded-md transition-all duration-200
-            ${
-              darkMode
-                ? "bg-info-dark hover:bg-info-dark/90"
-                : "bg-info-light hover:bg-info-light/90"
-            } text-white disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          {isSubmitting ? (
-            <span className="flex items-center">
-              <svg
-                className="mr-2 -ml-1 w-4 h-4 text-white animate-spin"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Saving...
-            </span>
-          ) : (
-            "Save Changes"
-          )}
+          {isSubmitting ? "Updating..." : "Update Goal"}
         </button>
       </div>
     </form>

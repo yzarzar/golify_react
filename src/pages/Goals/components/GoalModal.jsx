@@ -2,31 +2,42 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "../../../contexts/ThemeContext";
 import EditGoalForm from "./EditGoalForm";
 import { useNavigate } from "react-router-dom";
+import {
+  Flag as FlagIcon,
+  CalendarMonth as CalendarIcon,
+  AccessTime as TimeIcon,
+  Speed as SpeedIcon,
+  EmojiEvents as TrophyIcon,
+  Edit as EditIcon,
+  Close as CloseIcon,
+  Lightbulb as LightbulbIcon,
+  Timeline as TimelineIcon
+} from "@mui/icons-material";
 
 const getPriorityStyle = (priority, darkMode) => {
-  const baseClasses = "px-2 py-1 text-sm rounded-full ";
+  const baseClasses = "px-3 py-1.5 text-sm rounded-full inline-flex items-center gap-2";
   switch (priority) {
     case "high":
-      return (
-        baseClasses +
-        (darkMode
-          ? "bg-error-dark/20 text-error-dark"
-          : "bg-error-light/20 text-error-light")
-      );
+      return {
+        container: baseClasses + (darkMode
+          ? " bg-error-dark/20 text-error-dark"
+          : " bg-error-light/20 text-error-light"),
+        icon: darkMode ? "text-error-dark" : "text-error-light"
+      };
     case "medium":
-      return (
-        baseClasses +
-        (darkMode
-          ? "bg-warning-dark/20 text-warning-dark"
-          : "bg-warning-light/20 text-warning-light")
-      );
+      return {
+        container: baseClasses + (darkMode
+          ? " bg-warning-dark/20 text-warning-dark"
+          : " bg-warning-light/20 text-warning-light"),
+        icon: darkMode ? "text-warning-dark" : "text-warning-light"
+      };
     default:
-      return (
-        baseClasses +
-        (darkMode
-          ? "bg-success-dark/20 text-success-dark"
-          : "bg-success-light/20 text-success-light")
-      );
+      return {
+        container: baseClasses + (darkMode
+          ? " bg-success-dark/20 text-success-dark"
+          : " bg-success-light/20 text-success-light"),
+        icon: darkMode ? "text-success-dark" : "text-success-light"
+      };
   }
 };
 
@@ -91,6 +102,17 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
     setIsEditing(false);
   };
 
+  const getMotivationalQuote = (status) => {
+    switch (status) {
+      case 'completed':
+        return "Success is not final, failure is not fatal: it is the courage to continue that counts.";
+      case 'in_progress':
+        return "The journey of a thousand miles continues with each step. Keep pushing forward!";
+      default:
+        return "Every great achievement begins with the decision to try.";
+    }
+  };
+
   return (
     <div className="overflow-y-auto fixed inset-0 z-50">
       <div className="flex justify-center items-center px-4 pt-4 pb-20 min-h-screen text-center sm:p-0">
@@ -101,11 +123,7 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
 
         <div
           className={`relative inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform rounded-lg shadow-xl
-            ${
-              darkMode
-                ? "border bg-dark-bg-primary border-dark-border"
-                : "bg-white"
-            }`}
+            ${darkMode ? "border bg-dark-bg-primary border-dark-border" : "bg-white"}`}
         >
           {isEditing ? (
             <EditGoalForm
@@ -119,66 +137,70 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
               {/* Header Section */}
               <div className="mb-6">
                 <div className="flex justify-between items-start mb-4">
-                  <h3
-                    className={`text-2xl font-bold leading-6
-                      ${darkMode ? "text-dark-text-primary" : "text-gray-900"}`}
-                  >
-                    {currentGoal.title}
-                  </h3>
-                  <button
-                    onClick={onClose}
-                    className={`rounded-full p-2 transition-colors duration-theme
-                      ${
-                        darkMode
+                  <div className="flex gap-4 items-start">
+                    <div className={`p-2 rounded-full ${darkMode ? 'bg-info-dark/10' : 'bg-info-light/10'}`}>
+                      <TrophyIcon className={`text-2xl ${darkMode ? 'text-info-dark' : 'text-info-light'}`} />
+                    </div>
+                    <div>
+                      <h3 className={`text-2xl font-bold leading-6 mb-2 ${darkMode ? "text-dark-text-primary" : "text-gray-900"}`}>
+                        {currentGoal.title}
+                      </h3>
+                      <p className={`text-sm ${darkMode ? "text-dark-text-secondary" : "text-gray-600"}`}>
+                        {getMotivationalQuote(currentGoal.status)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <button
+                      onClick={handleEdit}
+                      className={`rounded-full p-2 transition-colors duration-theme
+                        ${darkMode
                           ? "text-dark-text-secondary hover:bg-dark-bg-secondary"
-                          : "text-gray-500 hover:bg-gray-100"
-                      }`}
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                          : "text-gray-500 hover:bg-gray-100"}`}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
+                      <EditIcon />
+                    </button>
+                    <button
+                      onClick={onClose}
+                      className={`rounded-full p-2 transition-colors duration-theme
+                        ${darkMode
+                          ? "text-dark-text-secondary hover:bg-dark-bg-secondary"
+                          : "text-gray-500 hover:bg-gray-100"}`}
+                    >
+                      <CloseIcon />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className={getPriorityStyle(currentGoal.priority, darkMode)}>
-                    {currentGoal.priority.charAt(0).toUpperCase() +
-                      currentGoal.priority.slice(1)}{" "}
-                    Priority
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <span className={getPriorityStyle(currentGoal.priority, darkMode).container}>
+                    <FlagIcon className={`text-sm ${getPriorityStyle(currentGoal.priority, darkMode).icon}`} />
+                    {currentGoal.priority.charAt(0).toUpperCase() + currentGoal.priority.slice(1)} Priority
                   </span>
-                  <span className={getStatusStyle(currentGoal.status)}>
-                    {currentGoal.status
-                      .split("-")
-                      .map(
-                        (word) => word.charAt(0).toUpperCase() + word.slice(1)
-                      )
-                      .join(" ")}
+                  <span className={`${getStatusStyle(currentGoal.status)} inline-flex items-center gap-2`}>
+                    <SpeedIcon className="text-sm" />
+                    {currentGoal.status.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}
                   </span>
                 </div>
 
-                <p
-                  className={`text-base mb-6
-                    ${darkMode ? "text-dark-text-secondary" : "text-gray-600"}`}
-                >
-                  {currentGoal.description}
-                </p>
+                <div className={`p-4 rounded-lg mb-4 ${darkMode ? "bg-dark-bg-secondary/50" : "bg-gray-50"}`}>
+                  <div className="flex gap-3 items-start">
+                    <LightbulbIcon className={`text-xl ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`} />
+                    <p className={`text-base ${darkMode ? "text-dark-text-secondary" : "text-gray-600"}`}>
+                      {currentGoal.description}
+                    </p>
+                  </div>
+                </div>
 
                 {/* Timeline Section */}
-                <div className={`rounded-lg mb-6 overflow-hidden ${darkMode ? "bg-dark-bg-secondary" : "bg-gray-50"}`}>
+                <div className={`rounded-lg overflow-hidden ${darkMode ? "bg-dark-bg-secondary" : "bg-gray-50"}`}>
                   <div className="p-4 border-b border-gray-200 dark:border-dark-border">
-                    <h4 className={`text-base font-semibold ${darkMode ? "text-dark-text-primary" : "text-gray-900"}`}>
-                      Timeline & Progress
-                    </h4>
+                    <div className="flex gap-2 items-center">
+                      <TimelineIcon className={darkMode ? "text-dark-text-primary" : "text-gray-900"} />
+                      <h4 className={`text-base font-semibold ${darkMode ? "text-dark-text-primary" : "text-gray-900"}`}>
+                        Timeline & Progress
+                      </h4>
+                    </div>
                   </div>
                   
                   <div className="p-4">
@@ -186,9 +208,7 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
                       <div className="space-y-4">
                         <div className="flex gap-3 items-center">
                           <div className={`p-2 rounded-lg ${darkMode ? "bg-dark-bg-primary" : "bg-white"}`}>
-                            <svg className="w-5 h-5 text-info-light dark:text-info-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                            <CalendarIcon className="w-5 h-5 text-info-light dark:text-info-dark" />
                           </div>
                           <div>
                             <div className={`text-xs font-medium mb-1 ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`}>
@@ -202,9 +222,7 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
 
                         <div className="flex gap-3 items-center">
                           <div className={`p-2 rounded-lg ${darkMode ? "bg-dark-bg-primary" : "bg-white"}`}>
-                            <svg className="w-5 h-5 text-info-light dark:text-info-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
+                            <TimeIcon className="w-5 h-5 text-info-light dark:text-info-dark" />
                           </div>
                           <div>
                             <div className={`text-xs font-medium mb-1 ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`}>
@@ -227,14 +245,14 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
                               <div
                                 className={`h-full rounded-full transition-all duration-300 relative
                                   ${darkMode ? "bg-info-dark" : "bg-info-light"}`}
-                                style={{ width: `${currentGoal.progress || 40}%` }}
+                                style={{ width: `${currentGoal.progress_percentage}%` }}
                               >
                                 <div className="absolute inset-0 bg-white/20"></div>
                               </div>
                             </div>
                           </div>
                           <span className={`text-sm font-medium ${darkMode ? "text-dark-text-primary" : "text-gray-900"}`}>
-                            {currentGoal.progress || 40}%
+                            {currentGoal.progress_percentage}%
                           </span>
                         </div>
                       </div>
@@ -243,7 +261,7 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
                 </div>
 
                 {/* Details Section */}
-                <div className={`rounded-lg overflow-hidden ${darkMode ? "bg-dark-bg-secondary" : "bg-gray-50"}`}>
+                <div className={`rounded-lg overflow-hidden mt-5 ${darkMode ? "bg-dark-bg-secondary" : "bg-gray-50"}`}>
                   <div className="p-4 border-b border-gray-200 dark:border-dark-border">
                     <h4 className={`text-base font-semibold ${darkMode ? "text-dark-text-primary" : "text-gray-900"}`}>
                       Additional Details
@@ -273,7 +291,8 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
                           <div className={`text-xs font-medium mb-1.5 ${darkMode ? "text-dark-text-secondary" : "text-gray-500"}`}>
                             Priority
                           </div>
-                          <span className={getPriorityStyle(currentGoal.priority, darkMode)}>
+                          <span className={getPriorityStyle(currentGoal.priority, darkMode).container}>
+                            <FlagIcon className={`text-sm ${getPriorityStyle(currentGoal.priority, darkMode).icon}`} />
                             {currentGoal.priority.charAt(0).toUpperCase() + currentGoal.priority.slice(1)}
                           </span>
                         </div>

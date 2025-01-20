@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Flag as FlagIcon } from "@mui/icons-material";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { goalApi } from "../../../services/api";
 import ConfirmDialog from "./ConfirmDialog";
@@ -133,7 +134,7 @@ const GoalCard = ({ goal, onClick, getStatusStyle, onDelete }) => {
               </h3>
               <div className="flex items-center space-x-2">
                 <span className={priorityStyle.container}>
-                  <span className={priorityStyle.dot}></span>
+                  <FlagIcon sx={{ fontSize: 16 }} />
                   {goal.priority}
                 </span>
                 <button

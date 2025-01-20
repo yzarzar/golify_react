@@ -5,7 +5,6 @@ import {
   IconButton,
   Chip,
   Tooltip,
-  Badge,
 } from '@mui/material';
 import {
   MoreVert as MoreVertIcon,
@@ -13,7 +12,6 @@ import {
   Flag as FlagIcon,
   AccessTime as AccessTimeIcon,
   Speed as SpeedIcon,
-  Notifications as NotificationsIcon,
   Share as ShareIcon,
 } from '@mui/icons-material';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -56,18 +54,6 @@ const GoalHeader = () => {
               }
             }}>
               <ShareIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Notifications">
-            <IconButton sx={{ 
-              color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary',
-              '&:hover': {
-                color: darkMode ? '#fff' : 'text.primary',
-              }
-            }}>
-              <Badge badgeContent={3} color="error">
-                <NotificationsIcon />
-              </Badge>
             </IconButton>
           </Tooltip>
           <Tooltip title="More Options">

@@ -1,5 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { Badge, IconButton, Tooltip } from '@mui/material';
+import { Notifications as NotificationsIcon } from '@mui/icons-material';
 import { logger } from '../utils/logger';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -41,7 +43,14 @@ const Header = ({ toggleSidebar, isSidebarCollapsed }) => {
             Goal Tracker
           </h1>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center space-x-8">
+          <Tooltip title="Notifications">
+            <IconButton className={`p-2 rounded-lg transition-colors duration-theme ${darkMode ? 'text-white hover:text-primary-100' : 'text-white bg-white/10 hover:bg-white/20'}`}>
+              <Badge badgeContent={3} color="error">
+                <NotificationsIcon className={`text-white`} />
+              </Badge>
+            </IconButton>
+          </Tooltip>
           <button
             onClick={toggleDarkMode}
             className={`p-2 rounded-lg transition-colors duration-theme
