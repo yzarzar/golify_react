@@ -113,6 +113,11 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
     }
   };
 
+  const handleGoToHub = () => {
+    navigate(`/goal-hub?goalId=${currentGoal.id}`);
+    onClose();
+  };
+
   return (
     <div className="overflow-y-auto fixed inset-0 z-50">
       <div className="flex justify-center items-center px-4 pt-4 pb-20 min-h-screen text-center sm:p-0">
@@ -336,7 +341,7 @@ const GoalModal = ({ goal, onClose, getStatusStyle, onUpdate }) => {
                   Close
                 </button>
                 <button
-                  onClick={() => navigate('/goal-hub')}
+                  onClick={handleGoToHub}
                   className={`px-4 py-2 flex items-center gap-2 rounded-md transition-colors duration-theme
                     ${darkMode ? "text-white bg-info-dark hover:bg-info-dark/90" : "text-white bg-info-light hover:bg-info-light/90"}`}
                 >

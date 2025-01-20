@@ -204,7 +204,11 @@ export const goalApi = {
     }
   },
   
-  async getGoals() {
+  getGoal: async (goalId) => {
+    return api.get(`/goals/${goalId}`);
+  },
+
+  getGoals: async () => {
     try {
       await delay(1000);
       const response = await fetch(`${API_URL}/goals/all`, {

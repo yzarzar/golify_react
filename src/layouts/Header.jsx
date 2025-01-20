@@ -1,13 +1,28 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Badge, IconButton, Tooltip } from '@mui/material';
-import { Notifications as NotificationsIcon } from '@mui/icons-material';
+import { 
+  Notifications as NotificationsIcon,
+  ArrowBack as ArrowBackIcon,
+  ArrowForward as ArrowForwardIcon 
+} from '@mui/icons-material';
 import { logger } from '../utils/logger';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Header = ({ toggleSidebar, isSidebarCollapsed }) => {
   logger.debug('Rendering Header');
   const { darkMode, toggleDarkMode } = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleBack = () => {
+    navigate(-1);
+  };
+
+  const handleForward = () => {
+    navigate(1);
+  };
 
   return (
     <header 
@@ -39,6 +54,37 @@ const Header = ({ toggleSidebar, isSidebarCollapsed }) => {
               />
             </svg>
           </button>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center ml-2">
+            <Tooltip title="Go Back">
+              <IconButton
+                onClick={handleBack}
+                size="small"
+                className={`transition-colors duration-theme
+                  ${darkMode 
+                    ? 'text-dark-text-primary hover:text-dark-text-accent' 
+                    : 'text-white/70 hover:text-white'
+                  }`}
+              >
+                <ArrowBackIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Go Forward">
+              <IconButton
+                onClick={handleForward}
+                size="small"
+                className={`transition-colors duration-theme
+                  ${darkMode 
+                    ? 'text-dark-text-primary hover:text-dark-text-accent' 
+                    : 'text-white/70 hover:text-white'
+                  }`}
+              >
+                <ArrowForwardIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </div>
+
           <h1 className={`ml-4 text-2xl font-bold ${darkMode ? 'text-dark-text-primary' : 'text-white'}`}>
             Goal Tracker
           </h1>
