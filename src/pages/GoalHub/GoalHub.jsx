@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Box, 
   Button,
+  Container,
+  Fab,
+  Zoom
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
-import { DragDropContext } from 'react-beautiful-dnd';
 import GoalHeader from './components/GoalHeader';
 import GridContainer from './components/GridContainer';
 import Milestone from './components/Milestone';
@@ -18,24 +20,12 @@ const GoalHub = () => {
       dueDate: '2024-02-15',
       expanded: true,
       priority: 'High',
-      description: 'Complete market research and competitor analysis'
-    },
-    { 
-      id: 2, 
-      title: 'Implementation', 
-      completed: false,
-      dueDate: '2024-03-01',
-      expanded: true,
-      priority: 'Medium',
-      description: 'Implement core features and functionality'
-    },
-  ]);
-
-  const [tasks, setTasks] = useState([
-    { id: 1, title: 'Market Research', completed: true, milestoneId: 1, dueDate: '2024-02-10', priority: 'High' },
-    { id: 2, title: 'Competitor Analysis', completed: true, milestoneId: 1, dueDate: '2024-02-12', priority: 'Medium' },
-    { id: 3, title: 'Setup Development Environment', completed: false, milestoneId: 2, dueDate: '2024-02-20', priority: 'High' },
-    { id: 4, title: 'Create Initial Prototype', completed: false, milestoneId: 2, dueDate: '2024-02-25', priority: 'Medium' },
+      description: 'Complete market research and competitor analysis',
+      tasks: [
+        { id: 1, title: 'Market Research', completed: true, priority: 'High', dueDate: '2024-02-10' },
+        { id: 2, title: 'Competitor Analysis', completed: true, priority: 'Medium', dueDate: '2024-02-12' }
+      ]
+    }
   ]);
 
   const [editingMilestoneId, setEditingMilestoneId] = useState(null);
@@ -71,11 +61,19 @@ const GoalHub = () => {
 
   const handleTaskEditComplete = () => {
     if (editingTaskId && editingTaskField) {
-      setTasks(tasks.map(t => 
-        t.id === editingTaskId 
-          ? { ...t, [editingTaskField]: editValue }
-          : t
-      ));
+      setMilestones(milestones.map(milestone => {
+        if (milestone.id === editingMilestoneId) {
+          return {
+            ...milestone,
+            tasks: milestone.tasks.map(task => 
+              task.id === editingTaskId 
+                ? { ...task, [editingTaskField]: editValue }
+                : task
+            )
+          };
+        }
+        return milestone;
+      }));
     }
     setEditingTaskId(null);
     setEditingTaskField(null);
@@ -84,11 +82,18 @@ const GoalHub = () => {
 
   const handleDeleteMilestone = (id) => {
     setMilestones(milestones.filter(m => m.id !== id));
-    setTasks(tasks.filter(t => t.milestoneId !== id));
   };
 
-  const handleDeleteTask = (id) => {
-    setTasks(tasks.filter(t => t.id !== id));
+  const handleDeleteTask = (milestoneId, taskId) => {
+    setMilestones(milestones.map(milestone => {
+      if (milestone.id === milestoneId) {
+        return {
+          ...milestone,
+          tasks: milestone.tasks.filter(task => task.id !== taskId)
+        };
+      }
+      return milestone;
+    }));
   };
 
   const handleToggleMilestoneComplete = (id) => {
@@ -97,20 +102,18 @@ const GoalHub = () => {
     ));
   };
 
-  const handleToggleTaskComplete = (id) => {
-    setTasks(tasks.map(t =>
-      t.id === id ? { ...t, completed: !t.completed } : t
-    ));
-  };
-
-  const handleDragEnd = (result) => {
-    if (!result.destination) return;
-
-    const items = Array.from(tasks);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    setTasks(items);
+  const handleToggleTaskComplete = (milestoneId, taskId) => {
+    setMilestones(milestones.map(milestone => {
+      if (milestone.id === milestoneId) {
+        return {
+          ...milestone,
+          tasks: milestone.tasks.map(task => 
+            task.id === taskId ? { ...task, completed: !task.completed } : task
+          )
+        };
+      }
+      return milestone;
+    }));
   };
 
   const handleAddMilestone = () => {
@@ -121,52 +124,46 @@ const GoalHub = () => {
       dueDate: '',
       expanded: true,
       priority: 'Medium',
-      description: ''
+      description: '',
+      tasks: []
     };
     setMilestones([...milestones, newMilestone]);
     handleMilestoneEdit(newMilestone.id, 'title', '');
   };
 
   const handleAddTask = (milestoneId) => {
-    const newTask = {
-      id: Date.now(),
-      title: '',
-      completed: false,
-      milestoneId,
-      dueDate: '',
-      priority: 'Medium'
-    };
-    setTasks([...tasks, newTask]);
-    handleTaskEdit(newTask.id, 'title', '');
+    setMilestones(milestones.map(milestone => {
+      if (milestone.id === milestoneId) {
+        return {
+          ...milestone,
+          tasks: [
+            ...milestone.tasks,
+            {
+              id: Date.now(),
+              title: '',
+              completed: false,
+              priority: 'Medium',
+              dueDate: ''
+            }
+          ]
+        };
+      }
+      return milestone;
+    }));
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: '1200px', margin: '0 auto' }}>
-      <GoalHeader />
-      <GridContainer milestones={milestones} tasks={tasks} />
-      
-      <Box sx={{ mt: 4, mb: 2 }}>
-        <Button
-          variant="text"
-          startIcon={<AddIcon />}
-          onClick={handleAddMilestone}
-          sx={{
-            color: 'text.secondary',
-            '&:hover': {
-              backgroundColor: 'rgba(0,0,0,0.04)',
-            }
-          }}
-        >
-          Add Milestone
-        </Button>
-      </Box>
+    <Box sx={{ py: 2, position: 'relative', minHeight: '100vh' }}>
+      <Container>
+        <GoalHeader />
+        <Box sx={{ mb: 4 }}>
+          <GridContainer milestones={milestones} />
+        </Box>
 
-      <DragDropContext onDragEnd={handleDragEnd}>
         {milestones.map((milestone) => (
           <Milestone
             key={milestone.id}
             milestone={milestone}
-            tasks={tasks.filter(t => t.milestoneId === milestone.id)}
             onToggleComplete={handleToggleMilestoneComplete}
             onDelete={handleDeleteMilestone}
             onEdit={handleMilestoneEdit}
@@ -184,7 +181,34 @@ const GoalHub = () => {
             onTaskEditComplete={handleTaskEditComplete}
           />
         ))}
-      </DragDropContext>
+      </Container>
+
+      {/* Floating Action Button for Add Milestone */}
+      <Zoom in>
+        <Fab
+          color="primary"
+          aria-label="add milestone"
+          onClick={handleAddMilestone}
+          sx={{
+            position: 'fixed',
+            right: { xs: 16, sm: 24, md: 40 },
+            bottom: { xs: 16, sm: 24, md: 40 },
+            width: 64,
+            height: 64,
+            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+            '&:hover': {
+              transform: 'scale(1.05)',
+              boxShadow: '0 12px 24px rgba(0,0,0,0.2)',
+            },
+            transition: 'all 0.2s ease-in-out',
+            '& .MuiSvgIcon-root': {
+              fontSize: 28
+            }
+          }}
+        >
+          <AddIcon />
+        </Fab>
+      </Zoom>
     </Box>
   );
 };

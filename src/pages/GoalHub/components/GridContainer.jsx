@@ -4,23 +4,35 @@ import ProgressCircle from './ProgressCircle';
 import TimeOverview from './TimeOverview';
 import StatusOverview from './StatusOverview';
 
-const GridContainer = ({ milestones, tasks }) => {
+const GridContainer = ({ milestones }) => {
+  const getAllTasks = () => {
+    return milestones.flatMap(milestone => milestone.tasks || []);
+  };
+
   const getOverallProgress = () => {
+    const tasks = getAllTasks();
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(t => t.completed).length;
     return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   };
 
   const getNextDueDate = () => {
-    const allDates = [...tasks, ...milestones]
-      .filter(item => !item.completed && item.dueDate)
-      .map(item => new Date(item.dueDate));
+    const milestoneDates = milestones
+      .filter(m => m.dueDate)
+      .map(m => new Date(m.dueDate));
+    
+    const taskDates = getAllTasks()
+      .filter(t => !t.completed && t.dueDate)
+      .map(t => new Date(t.dueDate));
+    
+    const allDates = [...milestoneDates, ...taskDates];
     
     if (allDates.length === 0) return null;
     return new Date(Math.min(...allDates));
   };
 
   const getTasksStats = () => {
+    const tasks = getAllTasks();
     const total = tasks.length;
     const completed = tasks.filter(t => t.completed).length;
     const inProgress = total - completed;
@@ -29,7 +41,11 @@ const GridContainer = ({ milestones, tasks }) => {
 
   const getMilestoneStats = () => {
     const total = milestones.length;
-    const completed = milestones.filter(m => m.completed).length;
+    const completed = milestones.filter(m => {
+      const milestoneTasks = m.tasks || [];
+      return milestoneTasks.length > 0 && 
+             milestoneTasks.every(t => t.completed);
+    }).length;
     const inProgress = total - completed;
     return { total, completed, inProgress };
   };
