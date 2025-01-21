@@ -94,8 +94,10 @@ const Task = ({
   onDelete,
   onEdit,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(task.title);
+  const [isTitleEditing, setIsTitleEditing] = useState(false);
+  const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
+  const [titleEditValue, setTitleEditValue] = useState(task.title);
+  const [descriptionEditValue, setDescriptionEditValue] = useState(task.description || '');
   const [showEditHint, setShowEditHint] = useState(false);
   const [dateAnchorEl, setDateAnchorEl] = useState(null);
   const [timeAnchorEl, setTimeAnchorEl] = useState(null);
@@ -110,21 +112,42 @@ const Task = ({
   const isOverdue = dueDate && isBefore(dueDate, new Date()) && task.status !== 'completed';
   const isDueToday = dueDate && isToday(dueDate);
 
-  const handleEditStart = () => {
-    setIsEditing(true);
+  const handleTitleEditStart = () => {
+    setIsTitleEditing(true);
+    setTitleEditValue(task.title);
     setShowEditHint(false);
   };
 
-  const handleEditComplete = () => {
-    if (editValue.trim() !== task.title) {
-      onEdit(task.id, "title", editValue.trim());
+  const handleTitleEditComplete = () => {
+    if (titleEditValue.trim() !== task.title) {
+      onEdit(task.id, "title", titleEditValue.trim());
     }
-    setIsEditing(false);
+    setIsTitleEditing(false);
   };
 
-  const handleKeyPress = (event) => {
+  const handleDescriptionEditStart = () => {
+    setIsDescriptionEditing(true);
+    setDescriptionEditValue(task.description || '');
+    setShowEditHint(false);
+  };
+
+  const handleDescriptionEditComplete = () => {
+    if (descriptionEditValue.trim() !== task.description) {
+      onEdit(task.id, "description", descriptionEditValue.trim());
+    }
+    setIsDescriptionEditing(false);
+  };
+
+  const handleTitleKeyPress = (event) => {
     if (event.key === 'Enter') {
-      handleEditComplete();
+      handleTitleEditComplete();
+    }
+  };
+
+  const handleDescriptionKeyPress = (event) => {
+    if (event.key === 'Enter' && event.shiftKey) {
+      event.preventDefault();
+      handleDescriptionEditComplete();
     }
   };
 
@@ -282,13 +305,13 @@ const Task = ({
               minWidth: 0,
             }}
           >
-            {isEditing ? (
-              <ClickAwayListener onClickAway={handleEditComplete}>
+            {isTitleEditing ? (
+              <ClickAwayListener onClickAway={handleTitleEditComplete}>
                 <InputBase
                   fullWidth
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onKeyDown={handleKeyPress}
+                  value={titleEditValue}
+                  onChange={(e) => setTitleEditValue(e.target.value)}
+                  onKeyDown={handleTitleKeyPress}
                   autoFocus
                   sx={{
                     flex: 1,
@@ -310,7 +333,7 @@ const Task = ({
             ) : (
               <Typography
                 variant="body2"
-                onClick={handleEditStart}
+                onClick={handleTitleEditStart}
                 onMouseEnter={() => setShowEditHint(true)}
                 onMouseLeave={() => setShowEditHint(false)}
                 sx={{
@@ -365,18 +388,15 @@ const Task = ({
             onMouseLeave={() => setShowEditHint(false)}
             sx={{ 
               position: 'relative',
-              mt: task.description || isEditing ? 1.5 : 0.5,
-              mb: task.description || isEditing ? 1.5 : 0.5,
+              mt: task.description || isDescriptionEditing ? 1.5 : 0.5,
+              mb: task.description || isDescriptionEditing ? 1.5 : 0.5,
             }}
           >
-            {task.description ? (
+            {task.description || isDescriptionEditing ? (
               <Box
-                onClick={() => {
-                  setIsEditing(true);
-                  setEditValue(task.description);
-                }}
+                onClick={!isDescriptionEditing ? handleDescriptionEditStart : undefined}
                 sx={{
-                  cursor: 'text',
+                  cursor: isDescriptionEditing ? 'default' : 'text',
                   position: 'relative',
                   '&:hover': {
                     '& .description-edit-hint': {
@@ -385,54 +405,80 @@ const Task = ({
                   }
                 }}
               >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    color: task.status === 'completed'
-                      ? theme.palette.text.secondary
-                      : theme.palette.text.primary,
-                    opacity: task.status === 'completed' ? 0.7 : 0.9,
-                    fontSize: '0.875rem',
-                    lineHeight: 1.6,
-                    whiteSpace: 'pre-wrap',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      backgroundColor: theme.palette.action.hover,
-                    },
-                  }}
-                >
-                  {task.description}
-                </Typography>
-                {showEditHint && (
-                  <Typography
-                    className="description-edit-hint"
-                    variant="caption"
-                    sx={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '8px',
-                      color: theme.palette.text.secondary,
-                      opacity: 0,
-                      transition: 'opacity 0.2s',
-                      backgroundColor: theme.palette.background.paper,
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      boxShadow: theme.shadows[1],
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    Click to edit
-                  </Typography>
+                {isDescriptionEditing ? (
+                  <ClickAwayListener onClickAway={handleDescriptionEditComplete}>
+                    <InputBase
+                      fullWidth
+                      multiline
+                      value={descriptionEditValue}
+                      onChange={(e) => setDescriptionEditValue(e.target.value)}
+                      onKeyDown={handleDescriptionKeyPress}
+                      autoFocus
+                      placeholder="Add a description..."
+                      sx={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        backgroundColor: theme.palette.action.hover,
+                        '& textarea': {
+                          color: theme.palette.text.primary,
+                          fontSize: '0.875rem',
+                          lineHeight: 1.6,
+                        },
+                        '&:hover, &:focus-within': {
+                          backgroundColor: theme.palette.action.selected,
+                        },
+                      }}
+                    />
+                  </ClickAwayListener>
+                ) : (
+                  <>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        color: task.status === 'completed'
+                          ? theme.palette.text.secondary
+                          : theme.palette.text.primary,
+                        opacity: task.status === 'completed' ? 0.7 : 0.9,
+                        fontSize: '0.875rem',
+                        lineHeight: 1.6,
+                        whiteSpace: 'pre-wrap',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          backgroundColor: theme.palette.action.hover,
+                        },
+                      }}
+                    >
+                      {task.description}
+                    </Typography>
+                    {showEditHint && (
+                      <Typography
+                        className="description-edit-hint"
+                        variant="caption"
+                        sx={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '8px',
+                          color: theme.palette.text.secondary,
+                          opacity: 0,
+                          transition: 'opacity 0.2s',
+                          backgroundColor: theme.palette.background.paper,
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          boxShadow: theme.shadows[1],
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        Click to edit
+                      </Typography>
+                    )}
+                  </>
                 )}
               </Box>
             ) : (
               <Button
-                onClick={() => {
-                  setIsEditing(true);
-                  setEditValue('');
-                }}
+                onClick={handleDescriptionEditStart}
                 startIcon={<AddIcon sx={{ fontSize: '1rem' }} />}
                 sx={{
                   color: theme.palette.text.secondary,
@@ -461,7 +507,7 @@ const Task = ({
               transform: task.due_date || task.priority !== 'low' ? 'none' : 'translateY(10px)',
               transition: 'all 0.2s ease-in-out',
               height: task.due_date || task.priority !== 'low' ? 'auto' : 0,
-              marginTop: task.description || isEditing ? 0 : 1,
+              marginTop: task.description || isDescriptionEditing ? 0 : 1,
               justifyContent: 'space-between',
               flexWrap: 'wrap',
               gap: 1,
