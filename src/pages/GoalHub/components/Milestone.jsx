@@ -719,7 +719,7 @@ const Milestone = ({
           <Collapse in={expanded}>
             <Box sx={{ pl: 6, mt: 2 }}>
               <Stack spacing={1}>
-                {milestone.tasks.map((task) => (
+                {milestone.tasks?.map((task) => (
                   <Task
                     key={task.id}
                     task={task}
