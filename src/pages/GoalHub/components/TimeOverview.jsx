@@ -7,8 +7,51 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '../../../contexts/ThemeContext';
 
-const TimeOverview = ({ nextDueDate }) => {
+const TimeOverview = ({ goal }) => {
   const { darkMode } = useTheme();
+
+  const calculateTimeRemaining = () => {
+    if (!goal?.end_date) return null;
+    
+    const endDate = new Date(goal.end_date);
+    const today = new Date();
+    const diffTime = endDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return `Overdue by ${Math.abs(diffDays)} days`;
+    }
+    return `${diffDays} days remaining`;
+  };
+
+  const getMotivationalMessage = () => {
+    if (!goal) return "Set your first goal to get started!";
+    
+    const progress = goal.progress_percentage || 0;
+    if (progress >= 100) {
+      return "Congratulations! You've completed this goal! 🎉";
+    }
+    if (progress >= 75) {
+      return "Almost there! Keep pushing to reach your goal!";
+    }
+    if (progress >= 50) {
+      return "Halfway there! Maintain your momentum!";
+    }
+    if (progress >= 25) {
+      return "Great start! Keep up the good work!";
+    }
+    return "You've begun your journey! Take it one step at a time.";
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "No deadline set";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
 
   return (
     <Paper 
@@ -38,19 +81,18 @@ const TimeOverview = ({ nextDueDate }) => {
             color: darkMode ? 'rgba(255, 255, 255, 0.6)' : 'text.secondary',
             mb: 0.5 
           }}>
-            Next Deadline
+            Goal Deadline
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <DateRangeIcon sx={{ 
-              color: darkMode ? '#ef5350' : '#d32f2f'
+              color: !goal?.end_date ? (darkMode ? '#9e9e9e' : '#757575') :
+                     new Date(goal.end_date) < new Date() ? (darkMode ? '#ef5350' : '#d32f2f') :
+                     (darkMode ? '#42a5f5' : '#1976d2')
             }} />
             <Typography variant="h6" fontWeight="500" sx={{
               color: darkMode ? 'rgba(255, 255, 255, 0.9)' : 'inherit'
             }}>
-              {nextDueDate?.toLocaleDateString('en-US', { 
-                month: 'long',
-                day: 'numeric'
-              })}
+              {formatDate(goal?.end_date)}
             </Typography>
           </Box>
         </Box>
@@ -60,12 +102,14 @@ const TimeOverview = ({ nextDueDate }) => {
             color: darkMode ? 'rgba(255, 255, 255, 0.6)' : 'text.secondary',
             mb: 0.5 
           }}>
-            Time Remaining
+            Time Status
           </Typography>
           <Typography variant="h6" fontWeight="500" sx={{
-            color: darkMode ? '#42a5f5' : '#1976d2'
+            color: !goal?.end_date ? (darkMode ? '#9e9e9e' : '#757575') :
+                   new Date(goal?.end_date) < new Date() ? (darkMode ? '#ef5350' : '#d32f2f') :
+                   (darkMode ? '#42a5f5' : '#1976d2')
           }}>
-            {Math.ceil((new Date('2024-03-31') - new Date()) / (1000 * 60 * 60 * 24))} Days
+            {calculateTimeRemaining() || "No deadline set"}
           </Typography>
         </Box>
 
@@ -84,7 +128,7 @@ const TimeOverview = ({ nextDueDate }) => {
           <Typography variant="body2" sx={{
             color: darkMode ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary'
           }}>
-            Stay on track! Complete 2 more tasks this week.
+            {getMotivationalMessage()}
           </Typography>
         </Box>
       </Stack>

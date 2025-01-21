@@ -8,8 +8,20 @@ import {
 import { useTheme } from '../../../contexts/ThemeContext';
 import ProgressStats from './ProgressStats';
 
-const StatusOverview = ({ taskStats, milestoneStats }) => {
+const StatusOverview = ({ goal }) => {
   const { darkMode } = useTheme();
+
+  const taskStats = {
+    total: goal?.task_stats?.total || 0,
+    completed: goal?.task_stats?.completed || 0,
+    inProgress: goal?.task_stats?.in_progress || 0
+  };
+
+  const milestoneStats = {
+    total: goal?.milestone_stats?.total || 0,
+    completed: goal?.milestone_stats?.completed || 0,
+    inProgress: goal?.milestone_stats?.in_progress || 0
+  };
 
   return (
     <Paper 

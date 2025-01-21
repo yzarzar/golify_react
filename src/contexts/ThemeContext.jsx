@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
+import { getTheme } from '../theme';
 
 const ThemeContext = createContext();
 
@@ -21,9 +23,14 @@ export const ThemeProvider = ({ children }) => {
     setDarkMode(prev => !prev);
   };
 
+  // Create memoized theme
+  const theme = useMemo(() => getTheme(darkMode), [darkMode]);
+
   return (
     <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
-      {children}
+      <MUIThemeProvider theme={theme}>
+        {children}
+      </MUIThemeProvider>
     </ThemeContext.Provider>
   );
 };
