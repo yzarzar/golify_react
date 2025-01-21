@@ -35,42 +35,42 @@ import { format, isAfter, isBefore, isToday, isSameDay } from 'date-fns';
 const priorityColors = {
   light: {
     high: {
-      main: '#dc2626',
-      light: '#fef2f2',
-      border: '#fee2e2',
-      gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+      main: "#dc2626",
+      light: "#fef2f2",
+      border: "#fee2e2",
+      gradient: "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)",
     },
     medium: {
-      main: '#d97706',
-      light: '#fffbeb',
-      border: '#fef3c7',
-      gradient: 'linear-gradient(135deg, #d97706 0%, #eab308 100%)'
+      main: "#d97706",
+      light: "#fffbeb",
+      border: "#fef3c7",
+      gradient: "linear-gradient(135deg, #d97706 0%, #eab308 100%)",
     },
     low: {
-      main: '#0ea5e9',
-      light: '#f0f9ff',
-      border: '#e0f2fe',
-      gradient: 'linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)'
+      main: "#0ea5e9",
+      light: "#f0f9ff",
+      border: "#e0f2fe",
+      gradient: "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
     }
   },
   dark: {
     high: {
-      main: '#ef4444',
-      light: '#450a0a',
-      border: '#7f1d1d',
-      gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
+      main: "#ef4444",
+      light: "rgba(239, 68, 68, 0.1)",
+      border: "rgba(239, 68, 68, 0.2)",
+      gradient: "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)",
     },
     medium: {
-      main: '#f59e0b',
-      light: '#451a03',
-      border: '#78350f',
-      gradient: 'linear-gradient(135deg, #d97706 0%, #eab308 100%)'
+      main: "#eab308",
+      light: "rgba(234, 179, 8, 0.1)",
+      border: "rgba(234, 179, 8, 0.2)",
+      gradient: "linear-gradient(135deg, #d97706 0%, #eab308 100%)",
     },
     low: {
-      main: '#38bdf8',
-      light: '#082f49',
-      border: '#0c4a6e',
-      gradient: 'linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)'
+      main: "#38bdf8",
+      light: "rgba(56, 189, 248, 0.1)",
+      border: "rgba(56, 189, 248, 0.2)",
+      gradient: "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
     }
   }
 };
@@ -503,10 +503,7 @@ const Task = ({
             spacing={1}
             alignItems="center"
             sx={{
-              opacity: task.due_date || task.priority !== 'low' ? 1 : 0,
-              transform: task.due_date || task.priority !== 'low' ? 'none' : 'translateY(10px)',
               transition: 'all 0.2s ease-in-out',
-              height: task.due_date || task.priority !== 'low' ? 'auto' : 0,
               marginTop: task.description || isDescriptionEditing ? 0 : 1,
               justifyContent: 'space-between',
               flexWrap: 'wrap',
@@ -602,41 +599,22 @@ const Task = ({
                 />
               </Tooltip>
 
-              <Tooltip
-                title={`Priority: ${task.priority}`}
-                arrow
-              >
-                <Chip
+              <Tooltip title="Set priority" arrow TransitionComponent={Zoom}>
+                <IconButton
                   size="small"
-                  icon={<FlagIcon sx={{ fontSize: '0.875rem' }} />}
-                  label={task.priority}
                   onClick={handlePriorityClick}
-                  variant="outlined"
                   sx={{
-                    maxWidth: '100px',
-                    height: '24px',
-                    '& .MuiChip-label': {
-                      px: 1,
-                      fontSize: '0.75rem',
-                      textTransform: 'capitalize'
-                    },
-                    '& .MuiChip-icon': {
-                      fontSize: '0.875rem',
-                      color: priorityColor.main
-                    },
-                    borderRadius: '4px',
-                    backgroundColor: priorityColor.light,
-                    borderColor: priorityColor.border,
+                    bgcolor: priorityColor.light,
+                    border: `1px solid ${priorityColor.border}`,
                     color: priorityColor.main,
-                    transition: 'all 0.2s',
                     '&:hover': {
-                      backgroundColor: priorityColor.light,
+                      bgcolor: priorityColor.light,
                       opacity: 0.9,
-                      transform: 'translateY(-1px)',
-                      cursor: 'pointer',
-                    },
+                    }
                   }}
-                />
+                >
+                  <FlagIcon fontSize="small" />
+                </IconButton>
               </Tooltip>
             </Stack>
 
@@ -730,40 +708,43 @@ const Task = ({
                 },
               }}
             >
-              {priorityOptions.map((option) => (
-                <MenuItem
-                  key={option.value}
-                  onClick={() => handlePrioritySelect(option.value)}
-                  selected={task.priority === option.value}
-                  sx={{
-                    '&:hover': {
-                      backgroundColor: `${priorityColors[isDark ? 'dark' : 'light'][option.value].light}`,
-                    },
-                    ...(task.priority === option.value && {
-                      backgroundColor: `${priorityColors[isDark ? 'dark' : 'light'][option.value].light} !important`,
-                    }),
-                  }}
-                >
-                  <ListItemIcon
+              {priorityOptions.map((priority) => {
+                const priorityColor = priorityColors[isDark ? 'dark' : 'light'][priority.value];
+                return (
+                  <MenuItem
+                    key={priority.value}
+                    onClick={() => handlePrioritySelect(priority.value)}
+                    selected={task.priority === priority.value}
                     sx={{
-                      color: priorityColors[isDark ? 'dark' : 'light'][option.value].main,
-                      minWidth: 28,
+                      '&:hover': {
+                        backgroundColor: priorityColor.light,
+                      },
+                      ...(task.priority === priority.value && {
+                        backgroundColor: `${priorityColor.light} !important`,
+                      }),
                     }}
                   >
-                    {option.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={option.value}
-                    sx={{
-                      '& .MuiTypography-root': {
-                        fontSize: '0.875rem',
-                        color: priorityColors[isDark ? 'dark' : 'light'][option.value].main,
-                        fontWeight: task.priority === option.value ? 600 : 400,
-                      },
-                    }}
-                  />
-                </MenuItem>
-              ))}
+                    <ListItemIcon
+                      sx={{
+                        color: priorityColor.main,
+                        minWidth: 28,
+                      }}
+                    >
+                      <FlagIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={priority.value.charAt(0).toUpperCase() + priority.value.slice(1)}
+                      sx={{
+                        '& .MuiTypography-root': {
+                          fontSize: '0.875rem',
+                          color: priorityColor.main,
+                          fontWeight: task.priority === priority.value ? 600 : 400,
+                        },
+                      }}
+                    />
+                  </MenuItem>
+                );
+              })}
             </Popover>
 
             <IconButton

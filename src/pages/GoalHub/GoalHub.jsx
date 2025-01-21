@@ -37,22 +37,22 @@ const GoalHub = () => {
   const [editValue, setEditValue] = useState("");
   const { alert, showAlert, hideAlert } = useAlert();
 
-  useEffect(() => {
-    const fetchGoalData = async () => {
-      if (goalId) {
-        try {
-          const response = await goalApi.getGoal(goalId);
-          setCurrentGoal(response.data);
-        } catch (error) {
-          console.error("Error fetching goal:", error);
-          showAlert(
-            error.response?.data?.message || "Failed to fetch goal data",
-            'error'
-          );
-        }
+  const fetchGoalData = async () => {
+    if (goalId) {
+      try {
+        const response = await goalApi.getGoal(goalId);
+        setCurrentGoal(response.data);
+      } catch (error) {
+        console.error("Error fetching goal:", error);
+        showAlert(
+          error.response?.data?.message || "Failed to fetch goal data",
+          'error'
+        );
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     const fetchMilestones = async () => {
       if (goalId) {
         try {
@@ -80,10 +80,32 @@ const GoalHub = () => {
     showAlert(message, 'success');
   };
 
-  const handleMilestoneEdit = (id, field, value) => {
-    setEditingMilestoneId(id);
-    setEditingMilestoneField(field);
-    setEditValue(value);
+  const handleMilestoneEdit = async (milestoneId, field, value) => {
+    try {
+      const response = await milestoneApi.updateMilestone(goalId, milestoneId, {
+        [field]: value
+      });
+
+      setMilestones(prevMilestones =>
+        prevMilestones.map(milestone =>
+          milestone.id === milestoneId
+            ? { ...milestone, [field]: value }
+            : milestone
+        )
+      );
+
+      // Refetch goal data to update stats
+      await fetchGoalData();
+      
+      showAlert(response.message, 'success');
+    } catch (error) {
+      console.error("Error updating milestone:", error);
+      if (error.response?.data) {
+        showAlert(error.response.data.message, 'error');
+      } else {
+        showAlert("Failed to update milestone. Please try again.", 'error');
+      }
+    }
   };
 
   const handleTaskEdit = (id, field, value) => {
@@ -93,70 +115,74 @@ const GoalHub = () => {
   };
 
   const handleMilestoneEditComplete = async () => {
-    if (editingMilestoneId && editingMilestoneField) {
-      try {
-        const milestone = milestones.find(m => m.id === editingMilestoneId);
-        if (!milestone || !currentGoal) {
-          showAlert("Milestone or goal information is not available. Please try refreshing the page.", 'error');
-          return;
+    if (!editingMilestoneId || !editingMilestoneField) {
+      setEditingMilestoneId(null);
+      setEditingMilestoneField(null);
+      setEditValue("");
+      return;
+    }
+
+    const milestone = milestones.find((m) => m.id === editingMilestoneId);
+
+    try {
+      let updatedValue = editValue;
+
+      if (editingMilestoneField === 'due_date') {
+        const newDueDate = new Date(editValue);
+        const goalStartDate = new Date(currentGoal.start_date);
+        const goalEndDate = new Date(currentGoal.end_date);
+        const today = new Date();
+
+        // Set to end of day to ensure proper comparison
+        newDueDate.setHours(23, 59, 59, 999);
+        goalStartDate.setHours(23, 59, 59, 999);
+        goalEndDate.setHours(23, 59, 59, 999);
+        today.setHours(0, 0, 0, 0);
+
+        if (newDueDate < today) {
+          const errorMessage = "Due date must be after or equal to today";
+          showAlert(errorMessage, 'error');
+          throw new Error(errorMessage);
         }
 
-        let updatedValue = editValue;
-
-        if (editingMilestoneField === 'due_date') {
-          const newDueDate = new Date(editValue);
-          const goalStartDate = new Date(currentGoal.start_date);
-          const goalEndDate = new Date(currentGoal.end_date);
-          const today = new Date();
-
-          // Set to end of day to ensure proper comparison
-          newDueDate.setHours(23, 59, 59, 999);
-          goalStartDate.setHours(23, 59, 59, 999);
-          goalEndDate.setHours(23, 59, 59, 999);
-          today.setHours(0, 0, 0, 0);
-
-          if (newDueDate < today) {
-            const errorMessage = "Due date must be after or equal to today";
-            showAlert(errorMessage, 'error');
-            throw new Error(errorMessage);
-          }
-
-          if (newDueDate < goalStartDate || newDueDate > goalEndDate) {
-            const errorMessage = `Due date must be between ${goalStartDate.toISOString().split('T')[0]} and ${goalEndDate.toISOString().split('T')[0]}`;
-            showAlert(errorMessage, 'error');
-            throw new Error(errorMessage);
-          }
-
-          // Set to midnight UTC for consistency
-          newDueDate.setUTCHours(0, 0, 0, 0);
-          updatedValue = newDueDate.toISOString();
+        if (newDueDate < goalStartDate || newDueDate > goalEndDate) {
+          const errorMessage = `Due date must be between ${goalStartDate.toISOString().split('T')[0]} and ${goalEndDate.toISOString().split('T')[0]}`;
+          showAlert(errorMessage, 'error');
+          throw new Error(errorMessage);
         }
 
-        const updatedData = {
-          ...milestone,
-          [editingMilestoneField]: updatedValue
-        };
+        // Set to midnight UTC for consistency
+        newDueDate.setUTCHours(0, 0, 0, 0);
+        updatedValue = newDueDate.toISOString();
+      }
 
-        const response = await milestoneApi.updateMilestone(goalId, editingMilestoneId, updatedData);
+      const updatedData = {
+        ...milestone,
+        [editingMilestoneField]: updatedValue
+      };
 
-        setMilestones(prevMilestones =>
-          prevMilestones.map(m =>
-            m.id === editingMilestoneId
-              ? { ...m, [editingMilestoneField]: updatedValue }
-              : m
-          )
-        );
+      const response = await milestoneApi.updateMilestone(goalId, editingMilestoneId, updatedData);
 
-        showAlert(response.message, 'success');
-      } catch (error) {
-        console.error("Error updating milestone:", error);
-        setMilestones(prevMilestones => [...prevMilestones]);
-        
-        if (error.response?.data) {
-          showAlert(error.response.data.message, 'error');
-        } else {
-          showAlert("Failed to update milestone. Please try again.", 'error');
-        }
+      setMilestones(prevMilestones =>
+        prevMilestones.map(m =>
+          m.id === editingMilestoneId
+            ? { ...m, [editingMilestoneField]: updatedValue }
+            : m
+        )
+      );
+
+      // Refetch goal data to update stats
+      await fetchGoalData();
+
+      showAlert(response.message, 'success');
+    } catch (error) {
+      console.error("Error updating milestone:", error);
+      setMilestones(prevMilestones => [...prevMilestones]);
+      
+      if (error.response?.data) {
+        showAlert(error.response.data.message, 'error');
+      } else {
+        showAlert("Failed to update milestone. Please try again.", 'error');
       }
     }
     setEditingMilestoneId(null);
@@ -194,6 +220,10 @@ const GoalHub = () => {
     try {
       const response = await milestoneApi.deleteMilestone(goalId, id);
       setMilestones(milestones.filter((m) => m.id !== id));
+      
+      // Refetch goal data to update stats
+      await fetchGoalData();
+      
       showAlert(response.message, 'success');
     } catch (error) {
       console.error("Error deleting milestone:", error);
@@ -373,6 +403,9 @@ const GoalHub = () => {
       setMilestones(prevMilestones => [...prevMilestones, createdMilestone]);
       handleMilestoneEdit(createdMilestone.id, "title", "Untitled");
       
+      // Refetch goal data to update stats
+      await fetchGoalData();
+
       showAlert(response.message, 'success');
     } catch (error) {
       console.error("Error creating milestone:", error);
@@ -400,20 +433,15 @@ const GoalHub = () => {
                     <Milestone
                       key={milestone.id}
                       milestone={milestone}
-                      onToggleComplete={handleToggleMilestoneComplete}
-                      onDelete={handleDeleteMilestone}
-                      onEdit={handleMilestoneEdit}
-                      onAddTask={handleAddTask}
+                      onToggleComplete={() => handleToggleMilestoneComplete(milestone.id)}
+                      onDelete={() => handleDeleteMilestone(milestone.id)}
+                      onEdit={(field, value) => handleMilestoneEdit(milestone.id, field, value)}
+                      onAddTask={() => handleAddTask(milestone.id)}
                       onTaskToggleComplete={handleToggleTaskComplete}
                       onTaskDelete={handleDeleteTask}
                       onTaskEdit={handleTaskEdit}
-                      isEditing={editingMilestoneId === milestone.id}
-                      editValue={editValue}
-                      onEditChange={setEditValue}
-                      onEditComplete={handleMilestoneEditComplete}
                       editingTaskId={editingTaskId}
                       taskEditValue={editValue}
-                      onTaskEditChange={setEditValue}
                       onTaskEditComplete={handleTaskEditComplete}
                     />
                   ))
