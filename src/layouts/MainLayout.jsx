@@ -24,13 +24,13 @@ const MainLayout = ({ children }) => {
 
         {/* Main Content - Scrollable area */}
         <main 
-          className={`flex-1 overflow-y-auto transition-colors duration-theme relative
+          className={`flex-1 overflow-y-auto overflow-x-hidden transition-colors duration-theme relative
             ${darkMode ? 'bg-dark-bg-secondary' : 'bg-primary-50'}
             ${isSidebarCollapsed ? 'pl-0' : 'pl-0 lg:pl-0'}
           `}
         >
           <div className="h-full p-6 mx-auto max-w-7xl">
-            <div className="w-full">
+            <div className="w-full max-w-full">
               {children}
             </div>
           </div>
