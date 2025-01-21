@@ -201,31 +201,37 @@ const GoalHub = () => {
     <Box>
       <Container maxWidth="xl">
         <Box sx={{ py: 4 }}>
-          <GoalHeader goal={currentGoal} />
-          <Box sx={{ mb: 4 }}>
-            <GridContainer milestones={milestones} />
-          </Box>
-          {milestones.map((milestone) => (
-            <Milestone
-              key={milestone.id}
-              milestone={milestone}
-              onToggleComplete={handleToggleMilestoneComplete}
-              onDelete={handleDeleteMilestone}
-              onEdit={handleMilestoneEdit}
-              onAddTask={handleAddTask}
-              onTaskToggleComplete={handleToggleTaskComplete}
-              onTaskDelete={handleDeleteTask}
-              onTaskEdit={handleTaskEdit}
-              isEditing={editingMilestoneId === milestone.id}
-              editValue={editValue}
-              onEditChange={setEditValue}
-              onEditComplete={handleMilestoneEditComplete}
-              editingTaskId={editingTaskId}
-              taskEditValue={editValue}
-              onTaskEditChange={setEditValue}
-              onTaskEditComplete={handleTaskEditComplete}
-            />
-          ))}
+          {currentGoal && (
+            <>
+              <GoalHeader goal={currentGoal} />
+              <Box sx={{ mt: 4 }}>
+                <GridContainer goal={currentGoal} />
+              </Box>
+              <Box sx={{ mt: 4 }}>
+                {milestones.map((milestone) => (
+                  <Milestone
+                    key={milestone.id}
+                    milestone={milestone}
+                    onToggleComplete={handleToggleMilestoneComplete}
+                    onDelete={handleDeleteMilestone}
+                    onEdit={handleMilestoneEdit}
+                    onAddTask={handleAddTask}
+                    onTaskToggleComplete={handleToggleTaskComplete}
+                    onTaskDelete={handleDeleteTask}
+                    onTaskEdit={handleTaskEdit}
+                    isEditing={editingMilestoneId === milestone.id}
+                    editValue={editValue}
+                    onEditChange={setEditValue}
+                    onEditComplete={handleMilestoneEditComplete}
+                    editingTaskId={editingTaskId}
+                    taskEditValue={editValue}
+                    onTaskEditChange={setEditValue}
+                    onTaskEditComplete={handleTaskEditComplete}
+                  />
+                ))}
+              </Box>
+            </>
+          )}
         </Box>
       </Container>
 

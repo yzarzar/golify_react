@@ -64,6 +64,35 @@ export const api = {
       throw error;
     }
   },
+
+  put: async (endpoint, data) => {
+    try {
+      logger.debug(`PUT request to ${endpoint}`);
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    } catch (error) {
+      logger.error("API PUT Error:", error);
+      throw error;
+    }
+  },
+
+  delete: async (endpoint) => {
+    try {
+      logger.debug(`DELETE request to ${endpoint}`);
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    } catch (error) {
+      logger.error("API DELETE Error:", error);
+      throw error;
+    }
+  },
 };
 
 export const authApi = {
@@ -256,4 +285,96 @@ export const goalApi = {
       throw error;
     }
   },
+};
+
+export const milestoneApi = {
+  // Get all milestones for a goal
+  getMilestones: async (goalId) => {
+    try {
+      logger.debug(`Getting milestones for goal ${goalId}`);
+      return api.get(`/goals/${goalId}/milestones`);
+    } catch (error) {
+      logger.error("Error getting milestones:", error);
+      throw error;
+    }
+  },
+
+  // Create a new milestone
+  createMilestone: async (goalId, milestoneData) => {
+    try {
+      logger.debug(`Creating milestone for goal ${goalId}`, milestoneData);
+      return api.post(`/goals/${goalId}/milestones`, milestoneData);
+    } catch (error) {
+      logger.error("Error creating milestone:", error);
+      throw error;
+    }
+  },
+
+  // Update a milestone
+  updateMilestone: async (goalId, milestoneId, milestoneData) => {
+    try {
+      logger.debug(`Updating milestone ${milestoneId} for goal ${goalId}`, milestoneData);
+      return api.put(`/goals/${goalId}/milestones/${milestoneId}`, milestoneData);
+    } catch (error) {
+      logger.error("Error updating milestone:", error);
+      throw error;
+    }
+  },
+
+  // Delete a milestone
+  deleteMilestone: async (goalId, milestoneId) => {
+    try {
+      logger.debug(`Deleting milestone ${milestoneId} from goal ${goalId}`);
+      return api.delete(`/goals/${goalId}/milestones/${milestoneId}`);
+    } catch (error) {
+      logger.error("Error deleting milestone:", error);
+      throw error;
+    }
+  }
+};
+
+export const taskApi = {
+  // Get all tasks for a milestone
+  getTasks: async (milestoneId) => {
+    try {
+      logger.debug(`Getting tasks for milestone ${milestoneId}`);
+      return api.get(`/milestones/${milestoneId}/tasks`);
+    } catch (error) {
+      logger.error("Error getting tasks:", error);
+      throw error;
+    }
+  },
+
+  // Create a new task
+  createTask: async (milestoneId, taskData) => {
+    try {
+      logger.debug(`Creating task for milestone ${milestoneId}`, taskData);
+      return api.post(`/milestones/${milestoneId}/tasks`, taskData);
+    } catch (error) {
+      logger.error("Error creating task:", error);
+      throw error;
+    }
+  },
+
+  // Update a task
+  updateTask: async (milestoneId, taskId, taskData) => {
+    try {
+      logger.debug(`Updating task ${taskId} for milestone ${milestoneId}`, taskData);
+      return api.put(`/milestones/${milestoneId}/tasks/${taskId}`, taskData);
+    } catch (error) {
+      logger.error("Error updating task:", error);
+      throw error;
+    }
+  },
+
+  // Delete a task
+  deleteTask: async (milestoneId, taskId) => {
+    try {
+      logger.debug(`Deleting task ${taskId} from milestone ${milestoneId}`);
+      return api.delete(`/milestones/${milestoneId}/tasks/${taskId}`);
+    } catch (error) {
+      logger.error("Error deleting task:", error);
+      throw error;
+    }
+  }
 };
