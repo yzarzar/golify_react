@@ -258,32 +258,73 @@ const GoalHub = () => {
     }
   };
 
-  const handleToggleTaskComplete = async (milestoneId, taskId) => {
+  const handleToggleMilestoneComplete = async (milestoneId) => {
     try {
-      let updatedTask = null;
+      const milestone = milestones.find(m => m.id === milestoneId);
+      const newStatus = milestone.status === 'completed' ? 'pending' : 'completed';
+      const newProgress = newStatus === 'completed' ? 100 : 0;
+      
+      const response = await milestoneApi.updateMilestone(goalId, milestoneId, {
+        status: newStatus,
+        progress_percentage: newProgress
+      });
+
       setMilestones(prevMilestones =>
-        prevMilestones.map(milestone => {
-          if (milestone.id !== milestoneId) return milestone;
-          const updatedTasks = milestone.tasks.map(task => {
-            if (task.id !== taskId) return task;
-            const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-            updatedTask = {
-              ...task,
-              status: newStatus,
-              progress_percentage: newStatus === 'completed' ? 100 : 0
-            };
-            return updatedTask;
-          });
-          return { ...milestone, tasks: updatedTasks };
-        })
+        prevMilestones.map(m =>
+          m.id === milestoneId
+            ? { ...m, status: newStatus, progress_percentage: newProgress }
+            : m
+        )
       );
 
-      if (updatedTask) {
-        const response = await milestoneApi.updateTask(goalId, milestoneId, taskId, updatedTask);
-        showAlert(response.message, 'success');
-      }
+      await fetchGoalData();
+      
+      showAlert(response.message, 'success');
     } catch (error) {
-      console.error("Error toggling task completion:", error);
+      console.error("Error toggling milestone status:", error);
+      if (error.response?.data) {
+        showAlert(error.response.data.message, 'error');
+      } else {
+        showAlert("Failed to update milestone status. Please try again.", 'error');
+      }
+    }
+  };
+
+  const handleToggleTaskComplete = async (milestoneId, taskId) => {
+    try {
+      const milestone = milestones.find(m => m.id === milestoneId);
+      const task = milestone.tasks.find(t => t.id === taskId);
+      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+
+      const response = await milestoneApi.updateTask(goalId, milestoneId, taskId, {
+        status: newStatus
+      });
+
+      const updatedTasks = milestone.tasks.map(t =>
+        t.id === taskId ? { ...t, status: newStatus } : t
+      );
+      const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
+      const totalTasks = updatedTasks.length;
+      const newProgress = Math.round((completedTasks / totalTasks) * 100);
+
+      setMilestones(prevMilestones =>
+        prevMilestones.map(m =>
+          m.id === milestoneId
+            ? {
+                ...m,
+                progress_percentage: newProgress,
+                status: newProgress === 100 ? 'completed' : newProgress === 0 ? 'pending' : 'in_progress',
+                tasks: updatedTasks
+              }
+            : m
+        )
+      );
+
+      await fetchGoalData();
+      
+      showAlert(response.message, 'success');
+    } catch (error) {
+      console.error("Error toggling task status:", error);
       if (error.response?.data) {
         showAlert(error.response.data.message, 'error');
       } else {
@@ -316,7 +357,6 @@ const GoalHub = () => {
 
       showAlert(response.message, 'success');
 
-      // Start editing the new task's title
       handleTaskEdit(createdTask.id, "title", "New Task");
     } catch (error) {
       console.error("Error adding task:", error);
@@ -324,40 +364,6 @@ const GoalHub = () => {
         showAlert(error.response.data.message, 'error');
       } else {
         showAlert("Failed to add task. Please try again.", 'error');
-      }
-    }
-  };
-
-  const handleToggleMilestoneComplete = async (id) => {
-    try {
-      const milestone = milestones.find(m => m.id === id);
-      if (!milestone) {
-        handleError("Milestone not found. Please try refreshing the page.");
-        return;
-      }
-
-      const newStatus = milestone.status === 'completed' ? 'pending' : 'completed';
-      const updatedData = {
-        ...milestone,
-        status: newStatus,
-        progress_percentage: newStatus === 'completed' ? 100 : 0
-      };
-
-      const response = await milestoneApi.updateMilestone(goalId, id, updatedData);
-
-      setMilestones(prevMilestones =>
-        prevMilestones.map(m =>
-          m.id === id ? { ...m, status: newStatus, progress_percentage: newStatus === 'completed' ? 100 : 0 } : m
-        )
-      );
-
-      showAlert(response.message, 'success');
-    } catch (error) {
-      console.error("Error toggling milestone completion:", error);
-      if (error.response?.data) {
-        showAlert(error.response.data.message, 'error');
-      } else {
-        showAlert("Failed to update milestone status. Please try again.", 'error');
       }
     }
   };
@@ -373,7 +379,6 @@ const GoalHub = () => {
       const goalStartDate = new Date(currentGoal.start_date);
       const goalEndDate = new Date(currentGoal.end_date);
 
-      // Set to end of day for proper comparison
       goalStartDate.setHours(23, 59, 59, 999);
       goalEndDate.setHours(23, 59, 59, 999);
       today.setHours(0, 0, 0, 0);
@@ -384,7 +389,6 @@ const GoalHub = () => {
         dueDate = goalEndDate;
       }
 
-      // Set to midnight UTC for API consistency
       dueDate.setUTCHours(0, 0, 0, 0);
       
       const newMilestoneData = {
@@ -394,7 +398,7 @@ const GoalHub = () => {
         priority: "medium",
         due_date: dueDate.toISOString(),
         progress_percentage: 0,
-        tasks: [] // Initialize empty tasks array
+        tasks: [] 
       };
 
       const response = await milestoneApi.createMilestone(goalId, newMilestoneData);
@@ -403,7 +407,6 @@ const GoalHub = () => {
       setMilestones(prevMilestones => [...prevMilestones, createdMilestone]);
       handleMilestoneEdit(createdMilestone.id, "title", "Untitled");
       
-      // Refetch goal data to update stats
       await fetchGoalData();
 
       showAlert(response.message, 'success');

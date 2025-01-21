@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTheme } from "@mui/material/styles";
 import {
   Paper,
@@ -35,6 +35,7 @@ import {
   Clear as ClearIcon,
 } from "@mui/icons-material";
 import { format, isAfter, isBefore, isToday } from "date-fns";
+import { alpha } from '@mui/material/styles';
 import Task from "./Task";
 
 const priorityColors = {
@@ -132,8 +133,34 @@ const Milestone = ({
 
   const priorityColor = priorityColors[isDark ? "dark" : "light"][milestone.priority.toLowerCase()];
 
-  const progress = milestone.progress_percentage;
+  const progress = useMemo(() => {
+    if (milestone.status === 'completed') return 100;
+    if (milestone.status === 'pending') return 0;
+    return milestone.progress_percentage || 0;
+  }, [milestone.status, milestone.progress_percentage]);
 
+  const progressBarStyles = useMemo(() => ({
+    height: "6px",
+    backgroundColor: alpha(theme.palette.action.hover, 0.3),
+    borderRadius: "3px",
+    overflow: "hidden",
+    "& .MuiLinearProgress-bar": {
+      background: `linear-gradient(90deg, 
+        ${alpha(priorityColor.main, 0.8)} 0%, 
+        ${priorityColor.main} 50%, 
+        ${alpha(priorityColor.main, 0.8)} 100%)`,
+      transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+      animation: progress === 100 ? "pulse 2s infinite" : "none",
+    },
+    "@keyframes pulse": {
+      "0%, 100%": {
+        opacity: 0.8,
+      },
+      "50%": {
+        opacity: 1,
+      }
+    }
+  }), [theme, priorityColor.main, progress]);
 
   const handleEditStart = () => {
     setIsEditing(true);
@@ -284,16 +311,7 @@ const Milestone = ({
         <LinearProgress
           variant="determinate"
           value={progress}
-          sx={{
-            height: "4px",
-            backgroundColor: theme.palette.action.hover,
-            "& .MuiLinearProgress-bar": {
-              backgroundColor:
-                progress === 100
-                  ? priorityColor.main
-                  : priorityColor.main,
-            },
-          }}
+          sx={progressBarStyles}
         />
 
         <Box sx={{ p: 2 }}>
