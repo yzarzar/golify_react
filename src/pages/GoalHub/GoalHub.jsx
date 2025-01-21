@@ -32,30 +32,53 @@ const GoalHub = () => {
       ? currentGoal.milestones
       : [
           {
-            id: 1,
-            title: "Research Phase",
-            completed: true,
-            dueDate: "2024-02-15",
-            expanded: true,
-            priority: "High",
-            description: "Complete market research and competitor analysis",
+            id: 2,
+            goal_id: 1,
+            title: "Complete the project",
+            description: null,
+            due_date: "2025-01-23",
+            status: "pending",
+            priority: "high",
+            progress_percentage: 50,
             tasks: [
               {
-                id: 1,
-                title: "Market Research",
-                completed: true,
-                priority: "High",
-                dueDate: "2024-02-10",
+                id: 32,
+                milestone_id: 2,
+                title: "New Task",
+                description: "Task description",
+                status: "in_progress",
+                priority: "high",
+                due_date: "2025-01-23T00:00:00.000000Z",
               },
               {
-                id: 2,
-                title: "Competitor Analysis",
-                completed: true,
-                priority: "Medium",
-                dueDate: "2024-02-12",
+                id: 33,
+                milestone_id: 2,
+                title: "New Task",
+                description: "Task description",
+                status: "in_progress",
+                priority: "medium",
+                due_date: "2025-01-23T00:00:00.000000Z"
               },
-            ],
-          },
+              {
+                id: 34,
+                milestone_id: 2,
+                title: "New Task",
+                description: "Task description",
+                status: "in_progress",
+                priority: "low",
+                due_date: "2025-01-23T00:00:00.000000Z",
+              },
+              {
+                id: 35,
+                milestone_id: 2,
+                title: "New Task",
+                description: "Task description",
+                status: "in_progress",
+                priority: "high",
+                due_date: "2025-01-23T00:00:00.000000Z",
+              }
+            ]
+          }
         ]
   );
 

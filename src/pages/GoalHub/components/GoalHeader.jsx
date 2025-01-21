@@ -160,6 +160,11 @@ const AnimatedIcon = ({ icon: Icon, animation, color }) => (
 const GoalHeader = ({ goal }) => {
   const { darkMode } = useTheme();
 
+  // Ensure goal exists before accessing its properties
+  if (!goal) {
+    return null; // or return a loading state
+  }
+
   // Status configuration
   const statusConfig = {
     completed: {
@@ -210,16 +215,20 @@ const GoalHeader = ({ goal }) => {
     },
   };
 
-  const status = goal?.status || 'in_progress';
-  const priority = goal?.priority?.toLowerCase() || 'medium';
+  const status = goal.status || 'in_progress';
+  const priority = (goal.priority || 'medium').toLowerCase();
 
-  const StatusIcon = statusConfig[status].icon;
-  const PriorityIcon = priorityConfig[priority].icon;
+  // Ensure the status and priority exist in their respective configs
+  const statusIconConfig = statusConfig[status] || statusConfig.in_progress;
+  const priorityIconConfig = priorityConfig[priority] || priorityConfig.medium;
 
-  const timeMetrics = calculateTimeMetrics(goal?.start_date, goal?.end_date);
+  const StatusIcon = statusIconConfig.icon;
+  const PriorityIcon = priorityIconConfig.icon;
 
-  const start = goal?.start_date ? new Date(goal?.start_date) : null;
-  const end = goal?.end_date ? new Date(goal?.end_date) : null;
+  const timeMetrics = calculateTimeMetrics(goal.start_date, goal.end_date);
+
+  const start = goal.start_date ? new Date(goal.start_date) : null;
+  const end = goal.end_date ? new Date(goal.end_date) : null;
   const totalDays = start && end ? Math.ceil((end - start) / (1000 * 60 * 60 * 24)) : null;
   const remainingDays = end ? Math.ceil((end - new Date()) / (1000 * 60 * 60 * 24)) : null;
   const progressDays = start ? Math.ceil((new Date() - start) / (1000 * 60 * 60 * 24)) : null;
@@ -243,7 +252,7 @@ const GoalHeader = ({ goal }) => {
               fontWeight: 700,
               color: darkMode ? '#fff' : '#1a237e',
             }}>
-              {goal?.title || 'Goal Hub'}
+              {goal.title || 'Goal Hub'}
             </Typography>
           </Box>
           <Typography variant="body1" sx={{ 
@@ -251,7 +260,7 @@ const GoalHeader = ({ goal }) => {
             maxWidth: 600,
             lineHeight: 1.6,
           }}>
-            {goal?.description || 'Track your progress, manage tasks, and achieve your goals efficiently. Stay focused and organized with our comprehensive goal tracking system.'}
+            {goal.description || 'Track your progress, manage tasks, and achieve your goals efficiently. Stay focused and organized with our comprehensive goal tracking system.'}
           </Typography>
         </Box>
 
@@ -283,23 +292,23 @@ const GoalHeader = ({ goal }) => {
       <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
         <Chip
           icon={<StatusIcon />}
-          label={statusConfig[status].label}
+          label={statusIconConfig.label}
           sx={{
-            bgcolor: statusConfig[status].bgColor,
-            color: statusConfig[status].color,
+            bgcolor: statusIconConfig.bgColor,
+            color: statusIconConfig.color,
             '& .MuiChip-icon': {
-              color: statusConfig[status].color,
+              color: statusIconConfig.color,
             }
           }}
         />
         <Chip
           icon={<PriorityIcon />}
-          label={priorityConfig[priority].label}
+          label={priorityIconConfig.label}
           sx={{
-            bgcolor: priorityConfig[priority].bgColor,
-            color: priorityConfig[priority].color,
+            bgcolor: priorityIconConfig.bgColor,
+            color: priorityIconConfig.color,
             '& .MuiChip-icon': {
-              color: priorityConfig[priority].color,
+              color: priorityIconConfig.color,
             }
           }}
         />
@@ -318,7 +327,7 @@ const GoalHeader = ({ goal }) => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <DateRangeIcon sx={{ fontSize: 18 }} />
               <Typography variant="body2">
-                {getDateRangeLabel(goal?.start_date, goal?.end_date)}
+                {getDateRangeLabel(goal.start_date, goal.end_date)}
               </Typography>
             </Box>
 
