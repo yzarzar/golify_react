@@ -39,44 +39,63 @@ import Task from "./Task";
 
 const priorityColors = {
   light: {
-    High: {
+    high: {
       main: "#dc2626",
       light: "#fef2f2",
       border: "#fee2e2",
       gradient: "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)",
+      hover: "#fef2f2",
     },
-    Medium: {
+    medium: {
       main: "#d97706",
       light: "#fffbeb",
       border: "#fef3c7",
-      gradient: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
+      gradient: "linear-gradient(135deg, #d97706 0%, #eab308 100%)",
+      hover: "#fffbeb",
     },
-    Low: {
-      main: "#059669",
-      light: "#ecfdf5",
-      border: "#d1fae5",
-      gradient: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    low: {
+      main: "#0ea5e9",
+      light: "#f0f9ff",
+      border: "#e0f2fe",
+      gradient: "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
+      hover: "#f0f9ff",
     },
   },
   dark: {
-    High: {
+    high: {
       main: "#ef4444",
-      light: "rgba(239, 68, 68, 0.15)",
-      border: "rgba(239, 68, 68, 0.25)",
+      light: "#450a0a",
+      border: "#7f1d1d",
       gradient: "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)",
+      hover: "rgba(239, 68, 68, 0.15)",
     },
-    Medium: {
+    medium: {
       main: "#f59e0b",
-      light: "rgba(245, 158, 11, 0.15)",
-      border: "rgba(245, 158, 11, 0.25)",
-      gradient: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
+      light: "#451a03",
+      border: "#78350f",
+      gradient: "linear-gradient(135deg, #d97706 0%, #eab308 100%)",
+      hover: "rgba(245, 158, 11, 0.15)",
     },
-    Low: {
-      main: "#10b981",
-      light: "rgba(16, 185, 129, 0.15)",
-      border: "rgba(16, 185, 129, 0.25)",
-      gradient: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    low: {
+      main: "#38bdf8",
+      light: "#082f49",
+      border: "#0c4a6e",
+      gradient: "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
+      hover: "rgba(56, 189, 248, 0.15)",
     },
+  },
+};
+
+const statusColors = {
+  light: {
+    completed: "#22c55e",
+    in_progress: "#f59e0b",
+    pending: "#64748b",
+  },
+  dark: {
+    completed: "#22c55e",
+    in_progress: "#f59e0b",
+    pending: "#94a3b8",
   },
 };
 
@@ -94,7 +113,8 @@ const Milestone = ({
   onTaskEditChange,
   onTaskEditComplete,
 }) => {
-  const [expanded, setExpanded] = useState(milestone.expanded);
+  const [expanded, setExpanded] = useState(true);
+  const [anchorEl, setAnchorEl] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(milestone.title);
   const [showEditHint, setShowEditHint] = useState(false);
@@ -105,37 +125,15 @@ const Milestone = ({
   const [showDescHint, setShowDescHint] = useState(false);
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const colors = priorityColors[isDark ? "dark" : "light"];
 
-  const tasks = milestone.tasks || [];
-  const completedTasks = tasks.filter((task) => task.completed).length;
-  const totalTasks = tasks.length;
-  const progress = totalTasks === 0 ? 0 : (completedTasks / totalTasks) * 100;
-
-  const getDueDateStatus = () => {
-    if (!milestone.dueDate) return null;
-    const dueDate = new Date(milestone.dueDate);
-    const today = new Date();
-
-    if (isToday(dueDate)) return "today";
-    if (isBefore(dueDate, today)) return "overdue";
-    if (isAfter(dueDate, today)) return "upcoming";
-    return null;
+  const handleExpandClick = () => {
+    setExpanded(!expanded);
   };
 
-  const getDueDateColor = () => {
-    const status = getDueDateStatus();
-    switch (status) {
-      case "overdue":
-        return isDark ? "#ef4444" : "#dc2626";
-      case "today":
-        return isDark ? "#8b5cf6" : "#7c3aed";
-      case "upcoming":
-        return isDark ? "#10b981" : "#059669";
-      default:
-        return theme.palette.text.secondary;
-    }
-  };
+  const priorityColor = priorityColors[isDark ? "dark" : "light"][milestone.priority.toLowerCase()];
+
+  const progress = milestone.progress_percentage;
+
 
   const handleEditStart = () => {
     setIsEditing(true);
@@ -170,14 +168,14 @@ const Milestone = ({
 
   const handleDateChange = (newDate) => {
     if (newDate) {
-      onEdit("dueDate", newDate.toISOString());
+      onEdit("due_date", newDate.toISOString());
     }
     handleDateClose();
   };
 
   const handleClearDate = (event) => {
     event.stopPropagation();
-    onEdit("dueDate", null);
+    onEdit("due_date", null);
   };
 
   const handlePriorityClick = (event) => {
@@ -197,9 +195,24 @@ const Milestone = ({
   const isPriorityMenuOpen = Boolean(priorityAnchorEl);
 
   const priorityOptions = [
-    { value: "High", color: colors.High.main, description: "Urgent and important" },
-    { value: "Medium", color: colors.Medium.main, description: "Important but not urgent" },
-    { value: "Low", color: colors.Low.main, description: "Can be done later" },
+    { 
+      value: "high", 
+      color: priorityColors[isDark ? "dark" : "light"].high.main, 
+      description: "Urgent and important",
+      icon: <FlagIcon />
+    },
+    { 
+      value: "medium", 
+      color: priorityColors[isDark ? "dark" : "light"].medium.main, 
+      description: "Important but not urgent",
+      icon: <FlagIcon />
+    },
+    { 
+      value: "low", 
+      color: priorityColors[isDark ? "dark" : "light"].low.main, 
+      description: "Can be done later",
+      icon: <FlagIcon />
+    }
   ];
 
   const handleDescriptionEdit = () => {
@@ -238,23 +251,33 @@ const Milestone = ({
         elevation={0}
         sx={{
           borderRadius: "12px",
-          backgroundColor: milestone.completed
+          backgroundColor: milestone.status === "completed"
             ? theme.palette.action.hover
             : theme.palette.background.paper,
           border: "1px solid",
-          borderColor: milestone.completed
+          borderColor: milestone.status === "completed"
             ? theme.palette.divider
-            : colors[milestone.priority].border,
+            : priorityColor.border,
+          position: "relative",
           transition: "all 0.2s ease-in-out",
           overflow: "hidden",
           mb: 2,
           "&:hover": {
-            boxShadow: theme.shadows[4],
+            boxShadow: `0 4px 20px 0 ${priorityColor.light}`,
             transform: "translateY(-2px)",
             "& .milestone-actions": {
               opacity: 1,
               transform: "translateX(0)",
             },
+          },
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "4px",
+            opacity: milestone.status === "completed" ? 0.5 : 1,
           },
         }}
       >
@@ -267,8 +290,8 @@ const Milestone = ({
             "& .MuiLinearProgress-bar": {
               backgroundColor:
                 progress === 100
-                  ? colors[milestone.priority].main
-                  : colors[milestone.priority].main,
+                  ? priorityColor.main
+                  : priorityColor.main,
             },
           }}
         />
@@ -279,24 +302,24 @@ const Milestone = ({
               size="small"
               onClick={() => onToggleComplete(milestone.id)}
               sx={{
-                color: milestone.completed
-                  ? colors[milestone.priority].main
+                color: milestone.status === "completed"
+                  ? priorityColor.main
                   : theme.palette.action.disabled,
                 transition: "all 0.2s",
                 "&:hover": {
                   transform: "scale(1.1)",
-                  color: colors[milestone.priority].main,
+                  color: priorityColor.main,
                 },
               }}
             >
-              {milestone.completed ? <CheckCircleIcon /> : <UncheckedIcon />}
+              {milestone.status === "completed" ? <CheckCircleIcon /> : <UncheckedIcon />}
             </IconButton>
 
             <Box sx={{ flex: 1 }}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <IconButton
                   size="small"
-                  onClick={() => setExpanded(!expanded)}
+                  onClick={handleExpandClick}
                   sx={{
                     transition: "transform 0.2s",
                     transform: expanded ? "rotate(0deg)" : "rotate(-90deg)",
@@ -350,10 +373,10 @@ const Milestone = ({
                         borderRadius: "8px",
                         fontSize: "1rem",
                         fontWeight: 600,
-                        color: milestone.completed
+                        color: milestone.status === "completed"
                           ? theme.palette.text.secondary
                           : theme.palette.text.primary,
-                        opacity: milestone.completed ? 0.7 : 1,
+                        opacity: milestone.status === "completed" ? 0.7 : 1,
                         transition: "all 0.2s",
                         "&:hover": {
                           backgroundColor: theme.palette.action.hover,
@@ -390,8 +413,8 @@ const Milestone = ({
                 >
                   <Tooltip
                     title={
-                      milestone.dueDate
-                        ? format(new Date(milestone.dueDate), "MMMM d, yyyy")
+                      milestone.due_date
+                        ? format(new Date(milestone.due_date), "MMMM d, yyyy")
                         : "Set due date"
                     }
                     arrow
@@ -400,8 +423,8 @@ const Milestone = ({
                       size="small"
                       icon={<CalendarIcon sx={{ fontSize: "0.875rem" }} />}
                       label={
-                        milestone.dueDate
-                          ? format(new Date(milestone.dueDate), "MMM d")
+                        milestone.due_date
+                          ? format(new Date(milestone.due_date), "MMM d")
                           : "Add date"
                       }
                       onClick={handleDateClick}
@@ -429,7 +452,7 @@ const Milestone = ({
                       }}
                     >
                       <DatePicker
-                        value={milestone.dueDate ? new Date(milestone.dueDate) : null}
+                        value={milestone.due_date ? new Date(milestone.due_date) : null}
                         onChange={handleDateChange}
                         renderInput={(params) => (
                           <Box sx={{ p: 2 }}>
@@ -462,8 +485,8 @@ const Milestone = ({
                       icon={
                         <FlagIcon
                           sx={{
-                            fontSize: "0.875rem",
-                            color: colors[milestone.priority].main,
+                            fontSize: '0.875rem',
+                            color: priorityColor.main,
                           }}
                         />
                       }
@@ -471,14 +494,23 @@ const Milestone = ({
                       onClick={handlePriorityClick}
                       sx={{
                         borderRadius: "6px",
-                        backgroundColor: colors[milestone.priority].light,
-                        borderColor: colors[milestone.priority].border,
-                        color: colors[milestone.priority].main,
+                        backgroundColor: priorityColor.light,
+                        borderColor: priorityColor.border,
+                        color: priorityColor.main,
+                        '& .MuiChip-label': {
+                          px: 1,
+                          fontSize: '0.75rem',
+                          textTransform: 'capitalize',
+                          fontWeight: 500,
+                        },
+                        '& .MuiChip-icon': {
+                          color: priorityColor.main,
+                        },
                         transition: "all 0.2s",
                         "&:hover": {
-                          backgroundColor: colors[milestone.priority].light,
-                          opacity: 0.9,
+                          backgroundColor: priorityColor.hover,
                           transform: "translateY(-1px)",
+                          boxShadow: `0 2px 8px 0 ${priorityColor.light}`,
                         },
                       }}
                     />
@@ -490,63 +522,55 @@ const Milestone = ({
                     onClose={handlePriorityClose}
                     anchorOrigin={{
                       vertical: "bottom",
-                      horizontal: "left",
+                      horizontal: "right",
                     }}
                     transformOrigin={{
                       vertical: "top",
-                      horizontal: "left",
-                    }}
-                    PaperProps={{
-                      elevation: 8,
-                      sx: {
-                        mt: 1,
-                        borderRadius: "12px",
-                        minWidth: 220,
-                        "& .MuiMenuItem-root": {
-                          px: 2,
-                          py: 1.5,
-                          borderRadius: "8px",
-                          mx: 1,
-                          my: 0.5,
-                        },
-                      },
+                      horizontal: "right",
                     }}
                   >
                     {priorityOptions.map((option) => (
                       <MenuItem
                         key={option.value}
-                        onClick={() => handlePriorityChange(option.value)}
-                        selected={milestone.priority === option.value}
+                        onClick={() => {
+                          onEdit("priority", option.value);
+                          handlePriorityClose();
+                        }}
                         sx={{
-                          transition: "all 0.2s",
-                          "&:hover": {
-                            backgroundColor: `${option.color}15`,
+                          minWidth: 180,
+                          gap: 1,
+                          py: 1,
+                          '&:hover': {
+                            backgroundColor: priorityColors[isDark ? "dark" : "light"][option.value].hover,
                           },
                           ...(milestone.priority === option.value && {
-                            backgroundColor: `${option.color}15 !important`,
+                            backgroundColor: `${priorityColors[isDark ? "dark" : "light"][option.value].hover} !important`,
                           }),
                         }}
                       >
-                        <ListItemIcon>
-                          <FlagIcon
-                            sx={{
-                              color: option.color,
-                              transition: "transform 0.2s",
-                              transform: milestone.priority === option.value ? "scale(1.2)" : "scale(1)",
-                            }}
-                          />
+                        <ListItemIcon
+                          sx={{
+                            color: priorityColors[isDark ? "dark" : "light"][option.value].main,
+                            minWidth: 36,
+                          }}
+                        >
+                          {option.icon}
                         </ListItemIcon>
                         <ListItemText
                           primary={option.value}
                           secondary={option.description}
                           primaryTypographyProps={{
                             sx: {
-                              color: option.color,
+                              textTransform: 'capitalize',
                               fontWeight: milestone.priority === option.value ? 600 : 400,
+                              color: priorityColors[isDark ? "dark" : "light"][option.value].main,
                             },
                           }}
                           secondaryTypographyProps={{
-                            sx: { fontSize: "0.75rem" },
+                            sx: {
+                              fontSize: '0.75rem',
+                              color: theme.palette.text.secondary,
+                            },
                           }}
                         />
                       </MenuItem>
@@ -695,7 +719,7 @@ const Milestone = ({
           <Collapse in={expanded}>
             <Box sx={{ pl: 6, mt: 2 }}>
               <Stack spacing={1}>
-                {tasks.map((task) => (
+                {milestone.tasks.map((task) => (
                   <Task
                     key={task.id}
                     task={task}

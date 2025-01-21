@@ -34,44 +34,57 @@ import { format, isAfter, isBefore, isToday, isSameDay } from 'date-fns';
 
 const priorityColors = {
   light: {
-    High: {
+    high: {
       main: '#dc2626',
       light: '#fef2f2',
       border: '#fee2e2',
       gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
     },
-    Medium: {
+    medium: {
       main: '#d97706',
       light: '#fffbeb',
       border: '#fef3c7',
-      gradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)'
+      gradient: 'linear-gradient(135deg, #d97706 0%, #eab308 100%)'
     },
-    Low: {
-      main: '#059669',
-      light: '#ecfdf5',
-      border: '#d1fae5',
-      gradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+    low: {
+      main: '#0ea5e9',
+      light: '#f0f9ff',
+      border: '#e0f2fe',
+      gradient: 'linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)'
     }
   },
   dark: {
-    High: {
+    high: {
       main: '#ef4444',
-      light: 'rgba(239, 68, 68, 0.12)',
-      border: 'rgba(239, 68, 68, 0.2)',
+      light: '#450a0a',
+      border: '#7f1d1d',
       gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)'
     },
-    Medium: {
+    medium: {
       main: '#f59e0b',
-      light: 'rgba(245, 158, 11, 0.12)',
-      border: 'rgba(245, 158, 11, 0.2)',
-      gradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)'
+      light: '#451a03',
+      border: '#78350f',
+      gradient: 'linear-gradient(135deg, #d97706 0%, #eab308 100%)'
     },
-    Low: {
-      main: '#10b981',
-      light: 'rgba(16, 185, 129, 0.12)',
-      border: 'rgba(16, 185, 129, 0.2)',
-      gradient: 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+    low: {
+      main: '#38bdf8',
+      light: '#082f49',
+      border: '#0c4a6e',
+      gradient: 'linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)'
     }
+  }
+};
+
+const statusColors = {
+  light: {
+    completed: "#22c55e",
+    in_progress: "#f59e0b",
+    pending: "#64748b",
+  },
+  dark: {
+    completed: "#22c55e",
+    in_progress: "#f59e0b",
+    pending: "#94a3b8",
   }
 };
 
@@ -81,76 +94,37 @@ const Task = ({
   onDelete,
   onEdit,
 }) => {
-  const [isTitleEditing, setIsTitleEditing] = useState(task.title === '');
-  const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
-  const [titleValue, setTitleValue] = useState(task.title);
-  const [descriptionValue, setDescriptionValue] = useState(task.description || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(task.title);
   const [showEditHint, setShowEditHint] = useState(false);
-  const [showDescriptionHint, setShowDescriptionHint] = useState(false);
   const [dateAnchorEl, setDateAnchorEl] = useState(null);
   const [timeAnchorEl, setTimeAnchorEl] = useState(null);
   const [priorityAnchorEl, setPriorityAnchorEl] = useState(null);
-  
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const colors = priorityColors[isDark ? 'dark' : 'light'];
 
-  const handleTitleEditStart = () => {
-    setIsTitleEditing(true);
-    setTitleValue(task.title);
+  const priorityColor = priorityColors[isDark ? 'dark' : 'light'][task.priority.toLowerCase()];
+  const statusColor = statusColors[isDark ? 'dark' : 'light'][task.status];
+
+  const dueDate = task.due_date ? new Date(task.due_date) : null;
+  const isOverdue = dueDate && isBefore(dueDate, new Date()) && task.status !== 'completed';
+  const isDueToday = dueDate && isToday(dueDate);
+
+  const handleEditStart = () => {
+    setIsEditing(true);
+    setShowEditHint(false);
   };
 
-  const handleTitleChange = (e) => {
-    setTitleValue(e.target.value);
-  };
-
-  const handleTitleComplete = () => {
-    const newTitle = titleValue.trim();
-    if (newTitle === '') {
-      onDelete();
-    } else if (newTitle !== task.title) {
-      onEdit({ ...task, title: newTitle });
+  const handleEditComplete = () => {
+    if (editValue.trim() !== task.title) {
+      onEdit(task.id, "title", editValue.trim());
     }
-    setIsTitleEditing(false);
+    setIsEditing(false);
   };
 
-  const handleTitleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleTitleComplete();
-    } else if (e.key === 'Escape') {
-      if (task.title === '') {
-        onDelete();
-      } else {
-        setTitleValue(task.title);
-        setIsTitleEditing(false);
-      }
-    }
-  };
-
-  const handleDescriptionEditStart = () => {
-    setIsDescriptionEditing(true);
-    setDescriptionValue(task.description || '');
-  };
-
-  const handleDescriptionChange = (e) => {
-    setDescriptionValue(e.target.value);
-  };
-
-  const handleDescriptionComplete = () => {
-    if (descriptionValue.trim() !== task.description) {
-      onEdit({ ...task, description: descriptionValue.trim() });
-    }
-    setIsDescriptionEditing(false);
-  };
-
-  const handleDescriptionKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleDescriptionComplete();
-    } else if (e.key === 'Escape') {
-      setDescriptionValue(task.description || '');
-      setIsDescriptionEditing(false);
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      handleEditComplete();
     }
   };
 
@@ -162,14 +136,6 @@ const Task = ({
     setDateAnchorEl(null);
   };
 
-  const handleDateChange = (newDate) => {
-    const currentDate = task.dueDate ? new Date(task.dueDate) : new Date();
-    const updatedDate = new Date(newDate);
-    updatedDate.setHours(currentDate.getHours(), currentDate.getMinutes());
-    onEdit({ ...task, dueDate: updatedDate.toISOString() });
-    handleDateClose();
-  };
-
   const handleTimeClick = (event) => {
     setTimeAnchorEl(event.currentTarget);
   };
@@ -178,17 +144,29 @@ const Task = ({
     setTimeAnchorEl(null);
   };
 
+  const handleDateChange = (newDate) => {
+    if (newDate) {
+      const currentTime = task.due_date ? new Date(task.due_date) : new Date();
+      newDate.setHours(currentTime.getHours(), currentTime.getMinutes());
+      onEdit(task.id, "due_date", newDate.toISOString());
+    }
+    handleDateClose();
+  };
+
   const handleTimeChange = (newTime) => {
-    const [hours, minutes] = newTime.split(':');
-    const updatedDate = task.dueDate ? new Date(task.dueDate) : new Date();
-    updatedDate.setHours(parseInt(hours), parseInt(minutes));
-    onEdit({ ...task, dueDate: updatedDate.toISOString() });
+    if (newTime) {
+      const currentDate = task.due_date ? new Date(task.due_date) : new Date();
+      currentDate.setHours(newTime.getHours(), newTime.getMinutes());
+      onEdit(task.id, "due_date", currentDate.toISOString());
+    }
     handleTimeClose();
   };
 
   const handleClearDate = (event) => {
     event.stopPropagation();
-    onEdit({ ...task, dueDate: null });
+    onEdit(task.id, "due_date", null);
+    setDateAnchorEl(null);
+    setTimeAnchorEl(null);
   };
 
   const handlePriorityClick = (event) => {
@@ -199,44 +177,32 @@ const Task = ({
     setPriorityAnchorEl(null);
   };
 
-  const handlePriorityChange = (newPriority) => {
-    onEdit({ ...task, priority: newPriority });
+  const handlePrioritySelect = (priority) => {
+    onEdit(task.id, "priority", priority);
     handlePriorityClose();
   };
 
-  const getDueDateStatus = () => {
-    if (!task.dueDate) return null;
-    const dueDate = new Date(task.dueDate);
-    const now = new Date('2025-01-20T12:42:49+06:30');
-    
-    if (isSameDay(dueDate, now)) return 'today';
-    if (isBefore(dueDate, now)) return 'overdue';
-    if (isAfter(dueDate, now)) return 'upcoming';
-    return null;
-  };
-
-  const getDueDateColor = () => {
-    const status = getDueDateStatus();
-    switch (status) {
-      case 'overdue':
-        return isDark ? '#f87171' : '#ef4444';
-      case 'today':
-        return isDark ? '#a78bfa' : '#8b5cf6';
-      case 'upcoming':
-        return isDark ? '#34d399' : '#10b981';
-      default:
-        return theme.palette.text.secondary;
-    }
-  };
-
-  const isDatePickerOpen = Boolean(dateAnchorEl);
-  const isTimePickerOpen = Boolean(timeAnchorEl);
   const isPriorityMenuOpen = Boolean(priorityAnchorEl);
 
   const priorityOptions = [
-    { value: 'High', color: colors.High.main, icon: <FlagIcon /> },
-    { value: 'Medium', color: colors.Medium.main, icon: <FlagIcon /> },
-    { value: 'Low', color: colors.Low.main, icon: <FlagIcon /> },
+    { 
+      value: 'high', 
+      color: priorityColors[isDark ? 'dark' : 'light'].high.main, 
+      description: 'Urgent and important',
+      icon: <FlagIcon />
+    },
+    { 
+      value: 'medium', 
+      color: priorityColors[isDark ? 'dark' : 'light'].medium.main, 
+      description: 'Important but not urgent',
+      icon: <FlagIcon />
+    },
+    { 
+      value: 'low', 
+      color: priorityColors[isDark ? 'dark' : 'light'].low.main, 
+      description: 'Can be done later',
+      icon: <FlagIcon />
+    }
   ];
 
   return (
@@ -249,15 +215,13 @@ const Task = ({
           p: 1.5,
           pl: '16px',
           borderRadius: '10px',
-          backgroundColor: task.completed 
-            ? isDark 
-              ? 'rgba(255,255,255,0.02)'
-              : 'rgba(0,0,0,0.02)'
+          backgroundColor: task.status === 'completed' 
+            ? theme.palette.action.hover 
             : theme.palette.background.paper,
           border: '1px solid',
-          borderColor: task.completed 
+          borderColor: task.status === 'completed' 
             ? theme.palette.divider 
-            : colors[task.priority].border,
+            : priorityColor.border,
           transition: 'all 0.2s ease-in-out',
           position: 'relative',
           overflow: 'hidden',
@@ -268,19 +232,19 @@ const Task = ({
             top: 0,
             bottom: 0,
             width: '4px',
-            background: colors[task.priority].gradient,
-            opacity: task.completed ? 0.3 : 0.8,
+            background: priorityColor.gradient,
+            opacity: task.status === 'completed' ? 0.3 : 0.8,
           },
           '&:hover': {
             transform: 'translateY(-2px)',
             boxShadow: isDark 
               ? '0 4px 12px rgba(0,0,0,0.3)'
               : '0 4px 12px rgba(0,0,0,0.06)',
-            backgroundColor: task.completed 
+            backgroundColor: task.status === 'completed' 
               ? isDark
                 ? 'rgba(255,255,255,0.03)'
                 : 'rgba(0,0,0,0.03)'
-              : colors[task.priority].light,
+              : priorityColor.light,
             '& .task-actions': {
               opacity: 1,
               transform: 'translateX(0)',
@@ -292,17 +256,17 @@ const Task = ({
           size="small"
           onClick={onToggleComplete}
           sx={{
-            color: task.completed
-              ? colors[task.priority].main
+            color: task.status === 'completed'
+              ? priorityColor.main
               : theme.palette.text.secondary,
             padding: '8px',
             '&:hover': {
-              backgroundColor: colors[task.priority].light,
-              color: colors[task.priority].main,
+              backgroundColor: priorityColor.light,
+              color: priorityColor.main,
             },
           }}
         >
-          {task.completed ? (
+          {task.status === 'completed' ? (
             <CheckCircleIcon sx={{ fontSize: '1.25rem' }} />
           ) : (
             <UncheckedIcon sx={{ fontSize: '1.25rem' }} />
@@ -318,13 +282,13 @@ const Task = ({
               minWidth: 0,
             }}
           >
-            {isTitleEditing ? (
-              <ClickAwayListener onClickAway={handleTitleComplete}>
+            {isEditing ? (
+              <ClickAwayListener onClickAway={handleEditComplete}>
                 <InputBase
                   fullWidth
-                  value={titleValue}
-                  onChange={handleTitleChange}
-                  onKeyDown={handleTitleKeyDown}
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={handleKeyPress}
                   autoFocus
                   sx={{
                     flex: 1,
@@ -346,15 +310,15 @@ const Task = ({
             ) : (
               <Typography
                 variant="body2"
-                onClick={handleTitleEditStart}
+                onClick={handleEditStart}
                 onMouseEnter={() => setShowEditHint(true)}
                 onMouseLeave={() => setShowEditHint(false)}
                 sx={{
                   flex: 1,
-                  color: task.completed ? theme.palette.text.secondary : theme.palette.text.primary,
+                  color: task.status === 'completed' ? theme.palette.text.secondary : theme.palette.text.primary,
                   fontSize: '0.875rem',
                   fontWeight: 500,
-                  textDecoration: task.completed ? 'line-through' : 'none',
+                  textDecoration: task.status === 'completed' ? 'line-through' : 'none',
                   padding: '4px 8px',
                   borderRadius: '4px',
                   cursor: 'text',
@@ -397,51 +361,20 @@ const Task = ({
           </Box>
 
           <Box
-            onMouseEnter={() => setShowDescriptionHint(true)}
-            onMouseLeave={() => setShowDescriptionHint(false)}
+            onMouseEnter={() => setShowEditHint(true)}
+            onMouseLeave={() => setShowEditHint(false)}
             sx={{ 
               position: 'relative',
-              mt: task.description || isDescriptionEditing ? 1.5 : 0.5,
-              mb: task.description || isDescriptionEditing ? 1.5 : 0.5,
+              mt: task.description || isEditing ? 1.5 : 0.5,
+              mb: task.description || isEditing ? 1.5 : 0.5,
             }}
           >
-            {isDescriptionEditing ? (
-              <ClickAwayListener onClickAway={handleDescriptionComplete}>
-                <InputBase
-                  fullWidth
-                  multiline
-                  value={descriptionValue}
-                  onChange={handleDescriptionChange}
-                  onKeyDown={handleDescriptionKeyDown}
-                  placeholder="Add a description..."
-                  sx={{
-                    '& textarea': {
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      backgroundColor: theme.palette.action.hover,
-                      fontSize: '0.875rem',
-                      color: theme.palette.text.primary,
-                      lineHeight: 1.6,
-                      transition: 'all 0.2s',
-                      minHeight: '60px',
-                      '&::placeholder': {
-                        color: theme.palette.text.secondary,
-                        opacity: 0.7,
-                      },
-                      '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                      '&:focus': {
-                        backgroundColor: theme.palette.action.selected,
-                      }
-                    }
-                  }}
-                  autoFocus
-                />
-              </ClickAwayListener>
-            ) : task.description ? (
+            {task.description ? (
               <Box
-                onClick={handleDescriptionEditStart}
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditValue(task.description);
+                }}
                 sx={{
                   cursor: 'text',
                   position: 'relative',
@@ -457,10 +390,10 @@ const Task = ({
                   sx={{
                     padding: '8px 12px',
                     borderRadius: '6px',
-                    color: task.completed
+                    color: task.status === 'completed'
                       ? theme.palette.text.secondary
                       : theme.palette.text.primary,
-                    opacity: task.completed ? 0.7 : 0.9,
+                    opacity: task.status === 'completed' ? 0.7 : 0.9,
                     fontSize: '0.875rem',
                     lineHeight: 1.6,
                     whiteSpace: 'pre-wrap',
@@ -472,7 +405,7 @@ const Task = ({
                 >
                   {task.description}
                 </Typography>
-                {showDescriptionHint && (
+                {showEditHint && (
                   <Typography
                     className="description-edit-hint"
                     variant="caption"
@@ -496,7 +429,10 @@ const Task = ({
               </Box>
             ) : (
               <Button
-                onClick={handleDescriptionEditStart}
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditValue('');
+                }}
                 startIcon={<AddIcon sx={{ fontSize: '1rem' }} />}
                 sx={{
                   color: theme.palette.text.secondary,
@@ -521,30 +457,24 @@ const Task = ({
             spacing={1}
             alignItems="center"
             sx={{
-              opacity: task.dueDate || task.priority !== 'Low' ? 1 : 0,
-              transform: task.dueDate || task.priority !== 'Low' ? 'none' : 'translateY(10px)',
+              opacity: task.due_date || task.priority !== 'low' ? 1 : 0,
+              transform: task.due_date || task.priority !== 'low' ? 'none' : 'translateY(10px)',
               transition: 'all 0.2s ease-in-out',
-              height: task.dueDate || task.priority !== 'Low' ? 'auto' : 0,
-              marginTop: task.description || isDescriptionEditing ? 0 : 1,
+              height: task.due_date || task.priority !== 'low' ? 'auto' : 0,
+              marginTop: task.description || isEditing ? 0 : 1,
               justifyContent: 'space-between',
               flexWrap: 'wrap',
               gap: 1,
+              '& > *': {
+                flexShrink: 0,
+              },
             }}
           >
-            <Stack 
-              direction="row" 
-              spacing={0.5}
-              sx={{
-                flexGrow: 1,
-                minWidth: 0,
-                flexWrap: 'wrap',
-                gap: 0.5,
-              }}
-            >
+            <Stack direction="row" spacing={1} alignItems="center">
               <Tooltip
                 title={
-                  task.dueDate
-                    ? `Date: ${format(new Date(task.dueDate), 'MMMM d, yyyy')}`
+                  task.due_date
+                    ? `Date: ${format(new Date(task.due_date), 'MMMM d, yyyy')}`
                     : 'Set date'
                 }
                 arrow
@@ -553,12 +483,12 @@ const Task = ({
                   size="small"
                   icon={<CalendarIcon sx={{ fontSize: '0.875rem' }} />}
                   label={
-                    task.dueDate
-                      ? format(new Date(task.dueDate), 'MMM d')
+                    task.due_date
+                      ? format(new Date(task.due_date), 'MMM d')
                       : 'Add date'
                   }
                   onClick={handleDateClick}
-                  onDelete={task.dueDate ? handleClearDate : undefined}
+                  onDelete={task.due_date ? handleClearDate : undefined}
                   variant="outlined"
                   sx={{
                     maxWidth: '120px',
@@ -567,15 +497,16 @@ const Task = ({
                       px: 1,
                       fontSize: '0.75rem',
                     },
-                    '& .MuiChip-icon': {
+                    '& .MuiChip-deleteIcon': {
+                      fontSize: '0.875rem',
                       ml: 0.75,
                     },
                     borderRadius: '4px',
-                    borderColor: task.dueDate ? getDueDateColor() : theme.palette.divider,
-                    color: getDueDateColor(),
+                    borderColor: task.due_date ? statusColor : theme.palette.divider,
+                    color: task.due_date ? statusColor : theme.palette.text.secondary,
                     backgroundColor: 'transparent',
                     '&:hover': {
-                      borderColor: task.dueDate ? getDueDateColor() : theme.palette.primary.main,
+                      borderColor: task.due_date ? statusColor : theme.palette.primary.main,
                       backgroundColor: theme.palette.action.hover,
                       cursor: 'pointer',
                     },
@@ -583,43 +514,10 @@ const Task = ({
                 />
               </Tooltip>
 
-              <Popover
-                open={Boolean(dateAnchorEl)}
-                anchorEl={dateAnchorEl}
-                onClose={handleDateClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'left',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'left',
-                }}
-                PaperProps={{
-                  sx: {
-                    mt: 0.5,
-                    boxShadow: theme.shadows[2],
-                  },
-                }}
-              >
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DatePicker
-                    value={task.dueDate ? new Date(task.dueDate) : null}
-                    onChange={handleDateChange}
-                    slotProps={{
-                      textField: {
-                        size: 'small',
-                        sx: { m: 1, minWidth: 220 },
-                      },
-                    }}
-                  />
-                </LocalizationProvider>
-              </Popover>
-
               <Tooltip
                 title={
-                  task.dueDate
-                    ? `Time: ${format(new Date(task.dueDate), 'h:mm a')}`
+                  task.due_date
+                    ? `Time: ${format(new Date(task.due_date), 'h:mm a')}`
                     : 'Set time'
                 }
                 arrow
@@ -628,8 +526,8 @@ const Task = ({
                   size="small"
                   icon={<TimeIcon sx={{ fontSize: '0.875rem' }} />}
                   label={
-                    task.dueDate
-                      ? format(new Date(task.dueDate), 'h:mm a')
+                    task.due_date
+                      ? format(new Date(task.due_date), 'h:mm a')
                       : 'Add time'
                   }
                   onClick={handleTimeClick}
@@ -642,14 +540,15 @@ const Task = ({
                       fontSize: '0.75rem',
                     },
                     '& .MuiChip-icon': {
+                      fontSize: '0.875rem',
                       ml: 0.75,
                     },
                     borderRadius: '4px',
-                    borderColor: task.dueDate ? getDueDateColor() : theme.palette.divider,
-                    color: getDueDateColor(),
+                    borderColor: task.due_date ? statusColor : theme.palette.divider,
+                    color: task.due_date ? statusColor : theme.palette.text.secondary,
                     backgroundColor: 'transparent',
                     '&:hover': {
-                      borderColor: task.dueDate ? getDueDateColor() : theme.palette.primary.main,
+                      borderColor: task.due_date ? statusColor : theme.palette.primary.main,
                       backgroundColor: theme.palette.action.hover,
                       cursor: 'pointer',
                     },
@@ -657,55 +556,13 @@ const Task = ({
                 />
               </Tooltip>
 
-              <Popover
-                open={Boolean(timeAnchorEl)}
-                anchorEl={timeAnchorEl}
-                onClose={handleTimeClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'left',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'left',
-                }}
-                PaperProps={{
-                  sx: {
-                    mt: 0.5,
-                    boxShadow: theme.shadows[2],
-                  },
-                }}
+              <Tooltip
+                title={`Priority: ${task.priority}`}
+                arrow
               >
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <TimePicker
-                    value={task.dueDate ? new Date(task.dueDate) : null}
-                    onChange={(newTime) => {
-                      if (newTime) {
-                        const timeString = format(newTime, 'HH:mm');
-                        handleTimeChange(timeString);
-                      }
-                    }}
-                    slotProps={{
-                      textField: {
-                        size: 'small',
-                        sx: { m: 1, minWidth: 120 },
-                      },
-                    }}
-                  />
-                </LocalizationProvider>
-              </Popover>
-
-              <Tooltip title={`Priority: ${task.priority}`} arrow>
                 <Chip
                   size="small"
-                  icon={
-                    <FlagIcon
-                      sx={{
-                        fontSize: '0.875rem',
-                        color: colors[task.priority].main,
-                      }}
-                    />
-                  }
+                  icon={<FlagIcon sx={{ fontSize: '0.875rem' }} />}
                   label={task.priority}
                   onClick={handlePriorityClick}
                   variant="outlined"
@@ -715,17 +572,19 @@ const Task = ({
                     '& .MuiChip-label': {
                       px: 1,
                       fontSize: '0.75rem',
+                      textTransform: 'capitalize'
                     },
                     '& .MuiChip-icon': {
-                      ml: 0.75,
+                      fontSize: '0.875rem',
+                      color: priorityColor.main
                     },
                     borderRadius: '4px',
-                    backgroundColor: colors[task.priority].light,
-                    borderColor: colors[task.priority].border,
-                    color: colors[task.priority].main,
+                    backgroundColor: priorityColor.light,
+                    borderColor: priorityColor.border,
+                    color: priorityColor.main,
                     transition: 'all 0.2s',
                     '&:hover': {
-                      backgroundColor: colors[task.priority].light,
+                      backgroundColor: priorityColor.light,
                       opacity: 0.9,
                       transform: 'translateY(-1px)',
                       cursor: 'pointer',
@@ -734,6 +593,72 @@ const Task = ({
                 />
               </Tooltip>
             </Stack>
+
+            <Popover
+              open={Boolean(dateAnchorEl)}
+              anchorEl={dateAnchorEl}
+              onClose={handleDateClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+              }}
+              PaperProps={{
+                sx: {
+                  mt: 0.5,
+                  boxShadow: theme.shadows[2],
+                },
+              }}
+            >
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DatePicker
+                  value={task.due_date ? new Date(task.due_date) : null}
+                  onChange={handleDateChange}
+                  slotProps={{
+                    textField: {
+                      size: 'small',
+                      sx: { m: 1, minWidth: 220 },
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+            </Popover>
+
+            <Popover
+              open={Boolean(timeAnchorEl)}
+              anchorEl={timeAnchorEl}
+              onClose={handleTimeClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+              }}
+              PaperProps={{
+                sx: {
+                  mt: 0.5,
+                  boxShadow: theme.shadows[2],
+                },
+              }}
+            >
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <TimePicker
+                  value={task.due_date ? new Date(task.due_date) : null}
+                  onChange={handleTimeChange}
+                  slotProps={{
+                    textField: {
+                      size: 'small',
+                      sx: { m: 1, minWidth: 120 },
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+            </Popover>
 
             <Popover
               open={Boolean(priorityAnchorEl)}
@@ -762,20 +687,20 @@ const Task = ({
               {priorityOptions.map((option) => (
                 <MenuItem
                   key={option.value}
-                  onClick={() => handlePriorityChange(option.value)}
+                  onClick={() => handlePrioritySelect(option.value)}
                   selected={task.priority === option.value}
                   sx={{
                     '&:hover': {
-                      backgroundColor: `${colors[option.value].light}`,
+                      backgroundColor: `${priorityColors[isDark ? 'dark' : 'light'][option.value].light}`,
                     },
                     ...(task.priority === option.value && {
-                      backgroundColor: `${colors[option.value].light} !important`,
+                      backgroundColor: `${priorityColors[isDark ? 'dark' : 'light'][option.value].light} !important`,
                     }),
                   }}
                 >
                   <ListItemIcon
                     sx={{
-                      color: colors[option.value].main,
+                      color: priorityColors[isDark ? 'dark' : 'light'][option.value].main,
                       minWidth: 28,
                     }}
                   >
@@ -786,7 +711,7 @@ const Task = ({
                     sx={{
                       '& .MuiTypography-root': {
                         fontSize: '0.875rem',
-                        color: colors[option.value].main,
+                        color: priorityColors[isDark ? 'dark' : 'light'][option.value].main,
                         fontWeight: task.priority === option.value ? 600 : 400,
                       },
                     }}
