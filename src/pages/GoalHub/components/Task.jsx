@@ -98,7 +98,8 @@ const Task = ({
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
   const [titleEditValue, setTitleEditValue] = useState(task.title);
-  const [descriptionEditValue, setDescriptionEditValue] = useState(task.description || '');
+  const [description, setDescription] = useState(task.description || '');
+  const [descriptionEditValue, setDescriptionEditValue] = useState(description);
   const [showEditHint, setShowEditHint] = useState(false);
   const [dateAnchorEl, setDateAnchorEl] = useState(null);
   const [timeAnchorEl, setTimeAnchorEl] = useState(null);
@@ -110,6 +111,10 @@ const Task = ({
   useEffect(() => {
     setTitle(task.title);
   }, [task.title]);
+
+  useEffect(() => {
+    setDescription(task.description || '');
+  }, [task.description]);
 
   const priorityColor = priorityColors[isDark ? 'dark' : 'light'][task.priority.toLowerCase()];
   const statusColor = statusColors[isDark ? 'dark' : 'light'][task.status];
@@ -161,15 +166,31 @@ const Task = ({
 
   const handleDescriptionEditStart = () => {
     setIsDescriptionEditing(true);
-    setDescriptionEditValue(task.description || '');
+    setDescriptionEditValue(description);
     setShowEditHint(false);
   };
 
-  const handleDescriptionEditComplete = () => {
-    if (descriptionEditValue.trim() !== task.description) {
-      onEdit(task.id, "description", descriptionEditValue.trim());
+  const handleDescriptionEditComplete = async () => {
+    if (descriptionEditValue === description) {
+      setIsDescriptionEditing(false);
+      return;
     }
-    setIsDescriptionEditing(false);
+
+    try {
+      const trimmedDescription = descriptionEditValue.trim();
+      // First make the API call to update the backend
+      await taskApi.updateTask(task.milestone_id, task.id, { description: trimmedDescription });
+      // Then notify parent component to update its state
+      await onEdit(task.id, "description", trimmedDescription);
+      // Finally update local state
+      setDescription(trimmedDescription);
+      setIsDescriptionEditing(false);
+    } catch (error) {
+      console.error("Error updating task description:", error);
+      setDescriptionEditValue(description);
+      setDescription(description);
+      setIsDescriptionEditing(false);
+    }
   };
 
   const handleDescriptionKeyPress = (event) => {
@@ -419,11 +440,11 @@ const Task = ({
             onMouseLeave={() => setShowEditHint(false)}
             sx={{ 
               position: 'relative',
-              mt: task.description || isDescriptionEditing ? 1.5 : 0.5,
-              mb: task.description || isDescriptionEditing ? 1.5 : 0.5,
+              mt: description || isDescriptionEditing ? 1.5 : 0.5,
+              mb: description || isDescriptionEditing ? 1.5 : 0.5,
             }}
           >
-            {task.description || isDescriptionEditing ? (
+            {description || isDescriptionEditing ? (
               <Box
                 onClick={!isDescriptionEditing ? handleDescriptionEditStart : undefined}
                 sx={{
@@ -465,6 +486,7 @@ const Task = ({
                   <>
                     <Typography
                       variant="body2"
+                      onClick={!isDescriptionEditing ? handleDescriptionEditStart : undefined}
                       sx={{
                         padding: '8px 12px',
                         borderRadius: '6px',
@@ -476,12 +498,13 @@ const Task = ({
                         lineHeight: 1.6,
                         whiteSpace: 'pre-wrap',
                         transition: 'all 0.2s',
+                        cursor: 'text',
                         '&:hover': {
                           backgroundColor: theme.palette.action.hover,
                         },
                       }}
                     >
-                      {task.description}
+                      {description || 'Add a description...'}
                     </Typography>
                     {showEditHint && (
                       <Typography
@@ -535,7 +558,7 @@ const Task = ({
             alignItems="center"
             sx={{
               transition: 'all 0.2s ease-in-out',
-              marginTop: task.description || isDescriptionEditing ? 0 : 1,
+              marginTop: description || isDescriptionEditing ? 0 : 1,
               justifyContent: 'space-between',
               flexWrap: 'wrap',
               gap: 1,
