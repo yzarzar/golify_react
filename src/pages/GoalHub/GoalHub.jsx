@@ -197,27 +197,56 @@ const GoalHub = () => {
     setEditValue("");
   };
 
-  const handleTaskEditComplete = () => {
-    if (editingTaskId && editingTaskField) {
-      try {
-        setMilestones(prevMilestones =>
-          prevMilestones.map(milestone => {
-            if (!milestone.tasks) return milestone;
-            const updatedTasks = milestone.tasks.map(task =>
-              task.id === editingTaskId
-                ? { ...task, [editingTaskField]: editValue }
-                : task
-            );
-            return { ...milestone, tasks: updatedTasks };
-          })
-        );
+  const handleTaskEditComplete = async () => {
+    if (!editingTaskId || !editingTaskField) {
+      setEditingTaskId(null);
+      setEditingTaskField(null);
+      setEditValue("");
+      return;
+    }
 
-        showAlert("Task updated successfully", 'success');
-      } catch (error) {
-        console.error("Error updating task:", error);
+    // Find the milestone that contains the task
+    const milestone = milestones.find(m => 
+      m.tasks && m.tasks.some(t => t.id === editingTaskId)
+    );
+
+    if (!milestone) {
+      handleError("Task not found");
+      return;
+    }
+
+    try {
+      // Make the API call to update the task
+      const response = await taskApi.updateTask(milestone.id, editingTaskId, {
+        [editingTaskField]: editValue
+      });
+
+      // Update local state
+      setMilestones(prevMilestones =>
+        prevMilestones.map(m => {
+          if (!m.tasks) return m;
+          const updatedTasks = m.tasks.map(task =>
+            task.id === editingTaskId
+              ? { ...task, [editingTaskField]: editValue }
+              : task
+          );
+          return { ...m, tasks: updatedTasks };
+        })
+      );
+
+      // Refetch goal data to update stats
+      await fetchGoalData();
+      
+      handleSuccess(response.message || "Task updated successfully");
+    } catch (error) {
+      console.error("Error updating task:", error);
+      if (error.response?.data) {
+        handleError(error.response.data.message);
+      } else {
         handleError("Failed to update task. Please try again.");
       }
     }
+
     setEditingTaskId(null);
     setEditingTaskField(null);
     setEditValue("");
@@ -244,7 +273,9 @@ const GoalHub = () => {
 
   const handleDeleteTask = async (milestoneId, taskId) => {
     try {
-      const response = await milestoneApi.deleteTask(goalId, milestoneId, taskId);
+      const response = await taskApi.deleteTask(milestoneId, taskId);
+      
+      // Update local state
       setMilestones(prevMilestones =>
         prevMilestones.map(milestone => {
           if (milestone.id !== milestoneId) return milestone;
@@ -254,13 +285,17 @@ const GoalHub = () => {
           };
         })
       );
-      showAlert(response.message, 'success');
+
+      // Refetch goal data to update stats
+      await fetchGoalData();
+      
+      handleSuccess(response.message || "Task deleted successfully");
     } catch (error) {
       console.error("Error deleting task:", error);
       if (error.response?.data) {
-        showAlert(error.response.data.message, 'error');
+        handleError(error.response.data.message);
       } else {
-        showAlert("Failed to delete task. Please try again.", 'error');
+        handleError("Failed to delete task. Please try again.");
       }
     }
   };
@@ -303,13 +338,16 @@ const GoalHub = () => {
       const task = milestone.tasks.find(t => t.id === taskId);
       const newStatus = task.status === 'completed' ? 'pending' : 'completed';
 
-      const response = await milestoneApi.updateTask(goalId, milestoneId, taskId, {
+      // Update task status using taskApi
+      const response = await taskApi.updateTask(milestoneId, taskId, {
         status: newStatus
       });
 
+      // Update local state
       const updatedTasks = milestone.tasks.map(t =>
         t.id === taskId ? { ...t, status: newStatus } : t
       );
+      
       const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
       const totalTasks = updatedTasks.length;
       const newProgress = Math.round((completedTasks / totalTasks) * 100);
@@ -327,9 +365,10 @@ const GoalHub = () => {
         )
       );
 
+      // Refetch goal data to update stats
       await fetchGoalData();
       
-      showAlert(response.message, 'success');
+      showAlert(response.message || 'Task status updated successfully', 'success');
     } catch (error) {
       console.error("Error toggling task status:", error);
       if (error.response?.data) {

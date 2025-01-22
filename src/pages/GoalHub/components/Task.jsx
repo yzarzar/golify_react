@@ -264,6 +264,10 @@ const Task = ({
     }
   };
 
+  const handleStatusToggle = () => {
+    onToggleComplete(task.id);
+  };
+
   return (
     <Zoom in style={{ transitionDelay: '100ms' }}>
       <Paper
@@ -313,15 +317,15 @@ const Task = ({
       >
         <IconButton
           size="small"
-          onClick={onToggleComplete}
+          onClick={handleStatusToggle}
           sx={{
             color: task.status === 'completed'
-              ? priorityColor.main
+              ? statusColor
               : theme.palette.text.secondary,
             padding: '8px',
             '&:hover': {
-              backgroundColor: priorityColor.light,
-              color: priorityColor.main,
+              backgroundColor: theme.palette.action.hover,
+              color: statusColor,
             },
           }}
         >
@@ -331,7 +335,6 @@ const Task = ({
             <UncheckedIcon sx={{ fontSize: '1.25rem' }} />
           )}
         </IconButton>
-
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box
             sx={{
