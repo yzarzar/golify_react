@@ -31,6 +31,7 @@ import {
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { format, isAfter, isBefore, isToday, isSameDay } from 'date-fns';
+import { taskApi } from '../../../services/api';
 
 const priorityColors = {
   light: {
@@ -102,8 +103,13 @@ const Task = ({
   const [dateAnchorEl, setDateAnchorEl] = useState(null);
   const [timeAnchorEl, setTimeAnchorEl] = useState(null);
   const [priorityAnchorEl, setPriorityAnchorEl] = useState(null);
+  const [title, setTitle] = useState(task.title);
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+
+  useEffect(() => {
+    setTitle(task.title);
+  }, [task.title]);
 
   const priorityColor = priorityColors[isDark ? 'dark' : 'light'][task.priority.toLowerCase()];
   const statusColor = statusColors[isDark ? 'dark' : 'light'][task.status];
@@ -118,11 +124,39 @@ const Task = ({
     setShowEditHint(false);
   };
 
-  const handleTitleEditComplete = () => {
-    if (titleEditValue.trim() !== task.title) {
-      onEdit(task.id, "title", titleEditValue.trim());
+  const handleTitleEditComplete = async () => {
+    if (titleEditValue.trim() === "") {
+      setTitleEditValue(task.title);
+      setIsTitleEditing(false);
+      return;
     }
-    setIsTitleEditing(false);
+
+    if (titleEditValue === task.title) {
+      setIsTitleEditing(false);
+      return;
+    }
+
+    try {
+      const trimmedTitle = titleEditValue.trim();
+      // First make the API call to update the backend
+      await taskApi.updateTask(task.milestone_id, task.id, { title: trimmedTitle });
+      // Then notify parent component to update its state
+      await onEdit(task.id, "title", trimmedTitle);
+      // Finally update local state
+      setTitle(trimmedTitle);
+      setIsTitleEditing(false);
+    } catch (error) {
+      console.error("Error updating task title:", error);
+      setTitleEditValue(task.title);
+      setTitle(task.title);
+      setIsTitleEditing(false);
+    }
+  };
+
+  const handleTitleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      handleTitleEditComplete();
+    }
   };
 
   const handleDescriptionEditStart = () => {
@@ -136,12 +170,6 @@ const Task = ({
       onEdit(task.id, "description", descriptionEditValue.trim());
     }
     setIsDescriptionEditing(false);
-  };
-
-  const handleTitleKeyPress = (event) => {
-    if (event.key === 'Enter') {
-      handleTitleEditComplete();
-    }
   };
 
   const handleDescriptionKeyPress = (event) => {
@@ -344,17 +372,13 @@ const Task = ({
               minWidth: 0,
             }}
           >
-            {isEditing ? (
-              <ClickAwayListener onClickAway={handleEditSubmit}>
+            {isTitleEditing ? (
+              <ClickAwayListener onClickAway={handleTitleEditComplete}>
                 <InputBase
                   fullWidth
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleEditSubmit();
-                    }
-                  }}
+                  value={titleEditValue}
+                  onChange={(e) => setTitleEditValue(e.target.value)}
+                  onKeyDown={handleTitleKeyPress}
                   autoFocus
                   sx={{
                     flex: 1,
@@ -371,7 +395,7 @@ const Task = ({
             ) : (
               <Typography
                 variant="body1"
-                onClick={() => setIsEditing(true)}
+                onClick={() => setIsTitleEditing(true)}
                 sx={{
                   flex: 1,
                   fontWeight: 500,
@@ -385,7 +409,7 @@ const Task = ({
                   },
                 }}
               >
-                {task.title}
+                {title}
               </Typography>
             )}
           </Box>

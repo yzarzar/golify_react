@@ -115,10 +115,45 @@ const GoalHub = () => {
     }
   };
 
-  const handleTaskEdit = (id, field, value) => {
-    setEditingTaskId(id);
-    setEditingTaskField(field);
-    setEditValue(value);
+  const handleTaskEdit = async (id, field, value) => {
+    try {
+      // Find the milestone that contains the task
+      const milestone = milestones.find(m => 
+        m.tasks && m.tasks.some(t => t.id === id)
+      );
+
+      if (!milestone) {
+        handleError("Task not found");
+        return;
+      }
+
+      // Update local state immediately
+      setMilestones(prevMilestones =>
+        prevMilestones.map(m => ({
+          ...m,
+          tasks: m.tasks?.map(task =>
+            task.id === id
+              ? { ...task, [field]: value }
+              : task
+          ) || []
+        }))
+      );
+
+      // Refetch goal data to update stats
+      await fetchGoalData();
+      
+      handleSuccess("Task updated successfully");
+    } catch (error) {
+      console.error("Error updating task:", error);
+      if (error.response?.data) {
+        handleError(error.response.data.message);
+      } else {
+        handleError("Failed to update task. Please try again.");
+      }
+      
+      // Revert the local state on error by re-fetching
+      await fetchGoalData();
+    }
   };
 
   const handleMilestoneEditComplete = async () => {
