@@ -127,13 +127,20 @@ const GoalHub = () => {
         return;
       }
 
-      // Update local state immediately
+      // Make the API call first
+      await taskApi.updateTask(milestone.id, id, { [field]: value });
+
+      // Get the updated task data
+      const updatedTaskResponse = await taskApi.getTask(milestone.id, id);
+      const updatedTask = updatedTaskResponse.data;
+
+      // Update local state with complete task data
       setMilestones(prevMilestones => {
         const updatedMilestones = prevMilestones.map(m => ({
           ...m,
           tasks: m.tasks?.map(task =>
             task.id === id
-              ? { ...task, [field]: value }
+              ? { ...task, ...updatedTask }  // Use the complete updated task data
               : task
           ) || []
         }));
@@ -145,6 +152,19 @@ const GoalHub = () => {
             tasks: [...(m.tasks || [])].sort((a, b) => {
               const priorityOrder = { high: 0, medium: 1, low: 2 };
               return priorityOrder[a.priority.toLowerCase()] - priorityOrder[b.priority.toLowerCase()];
+            })
+          }));
+        }
+
+        // Sort tasks by due date if date was updated
+        if (field === 'due_date') {
+          return updatedMilestones.map(m => ({
+            ...m,
+            tasks: [...(m.tasks || [])].sort((a, b) => {
+              if (!a.due_date && !b.due_date) return 0;
+              if (!a.due_date) return 1;
+              if (!b.due_date) return -1;
+              return new Date(a.due_date) - new Date(b.due_date);
             })
           }));
         }
@@ -161,7 +181,7 @@ const GoalHub = () => {
       if (error.response?.data) {
         handleError(error.response.data.message);
       } else {
-        handleError("Failed to update task. Please try again.");
+        //handleError("Failed to update task. Please try again.");
       }
       
       // Revert the local state on error by re-fetching
@@ -271,15 +291,14 @@ const GoalHub = () => {
 
       // Update local state
       setMilestones(prevMilestones =>
-        prevMilestones.map(m => {
-          if (!m.tasks) return m;
-          const updatedTasks = m.tasks.map(task =>
-            task.id === editingTaskId
-              ? { ...task, [editingTaskField]: editValue }
-              : task
-          );
-          return { ...m, tasks: updatedTasks };
-        })
+        prevMilestones.map(m =>
+          m.id === milestone.id
+            ? {
+                ...m,
+                tasks: Array.isArray(m.tasks) ? [...m.tasks, { id: editingTaskId, [editingTaskField]: editValue }] : [{ id: editingTaskId, [editingTaskField]: editValue }]
+              }
+            : m
+        )
       );
 
       // Refetch goal data to update stats

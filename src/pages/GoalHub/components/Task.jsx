@@ -106,6 +106,8 @@ const Task = ({
   const [priorityAnchorEl, setPriorityAnchorEl] = useState(null);
   const [title, setTitle] = useState(task.title);
   const [priority, setPriority] = useState(task.priority);
+  const [dueDate, setDueDate] = useState(task.due_date ? new Date(task.due_date) : null);
+  const [tempTime, setTempTime] = useState(null);
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
@@ -121,10 +123,17 @@ const Task = ({
     setPriority(task.priority);
   }, [task.priority]);
 
+  useEffect(() => {
+    setDueDate(task.due_date ? new Date(task.due_date) : null);
+  }, [task.due_date]);
+
+  useEffect(() => {
+    setTempTime(dueDate);
+  }, [dueDate]);
+
   const priorityColor = priorityColors[isDark ? 'dark' : 'light'][priority.toLowerCase()];
   const statusColor = statusColors[isDark ? 'dark' : 'light'][task.status];
 
-  const dueDate = task.due_date ? new Date(task.due_date) : null;
   const isOverdue = dueDate && isBefore(dueDate, new Date()) && task.status !== 'completed';
   const isDueToday = dueDate && isToday(dueDate);
 
@@ -222,29 +231,85 @@ const Task = ({
     setTimeAnchorEl(null);
   };
 
-  const handleDateChange = (newDate) => {
-    if (newDate) {
-      const currentTime = task.due_date ? new Date(task.due_date) : new Date();
-      newDate.setHours(currentTime.getHours(), currentTime.getMinutes());
-      onEdit(task.id, "due_date", newDate.toISOString());
+  const handleDateChange = async (newDate) => {
+    if (!newDate) {
+      handleDateClose();
+      return;
     }
-    handleDateClose();
+
+    try {
+      // Keep current time when changing date
+      const currentTime = dueDate || new Date();
+      newDate.setHours(currentTime.getHours(), currentTime.getMinutes());
+      
+      // First make the API call to update the backend
+      await taskApi.updateTask(task.milestone_id, task.id, { 
+        due_date: newDate.toISOString() 
+      });
+      
+      // Then notify parent component to update its state
+      await onEdit(task.id, "due_date", newDate.toISOString());
+      
+      // Finally update local state
+      setDueDate(newDate);
+      handleDateClose();
+    } catch (error) {
+      console.error("Error updating task due date:", error);
+      setDueDate(dueDate);
+      handleDateClose();
+    }
   };
 
   const handleTimeChange = (newTime) => {
-    if (newTime) {
-      const currentDate = task.due_date ? new Date(task.due_date) : new Date();
-      currentDate.setHours(newTime.getHours(), newTime.getMinutes());
-      onEdit(task.id, "due_date", currentDate.toISOString());
-    }
-    handleTimeClose();
+    setTempTime(newTime);
   };
 
-  const handleClearDate = (event) => {
+  const handleTimeAccept = async () => {
+    if (!tempTime) {
+      handleTimeClose();
+      return;
+    }
+
+    try {
+      // Keep current date when changing time
+      const updatedDate = new Date(dueDate || new Date());
+      updatedDate.setHours(tempTime.getHours(), tempTime.getMinutes());
+      
+      // First make the API call to update the backend
+      await taskApi.updateTask(task.milestone_id, task.id, { 
+        due_date: updatedDate.toISOString() 
+      });
+      
+      // Then notify parent component to update its state
+      await onEdit(task.id, "due_date", updatedDate.toISOString());
+      
+      // Finally update local state
+      setDueDate(updatedDate);
+      handleTimeClose();
+    } catch (error) {
+      console.error("Error updating task due time:", error);
+      setTempTime(dueDate);
+      handleTimeClose();
+    }
+  };
+
+  const handleClearDate = async (event) => {
     event.stopPropagation();
-    onEdit(task.id, "due_date", null);
-    setDateAnchorEl(null);
-    setTimeAnchorEl(null);
+    try {
+      // First make the API call to update the backend
+      await taskApi.updateTask(task.milestone_id, task.id, { due_date: null });
+      
+      // Then notify parent component to update its state
+      await onEdit(task.id, "due_date", null);
+      
+      // Finally update local state
+      setDueDate(null);
+      setDateAnchorEl(null);
+      setTimeAnchorEl(null);
+    } catch (error) {
+      console.error("Error clearing task due date:", error);
+      setDueDate(dueDate);
+    }
   };
 
   const handlePriorityClick = (event) => {
@@ -589,24 +654,16 @@ const Task = ({
             }}
           >
             <Stack direction="row" spacing={1} alignItems="center">
-              <Tooltip
-                title={
-                  task.due_date
-                    ? `Date: ${format(new Date(task.due_date), 'MMMM d, yyyy')}`
-                    : 'Set date'
-                }
-                arrow
+              <Tooltip 
+                title={dueDate ? `Due ${format(dueDate, 'PPp')}` : "Set due date"}
+                placement="top"
               >
                 <Chip
                   size="small"
                   icon={<CalendarIcon sx={{ fontSize: '0.875rem' }} />}
-                  label={
-                    task.due_date
-                      ? format(new Date(task.due_date), 'MMM d')
-                      : 'Add date'
-                  }
+                  label={dueDate ? format(dueDate, 'MMM d') : 'Add date'}
                   onClick={handleDateClick}
-                  onDelete={task.due_date ? handleClearDate : undefined}
+                  onDelete={dueDate ? handleClearDate : undefined}
                   variant="outlined"
                   sx={{
                     maxWidth: '120px',
@@ -620,11 +677,29 @@ const Task = ({
                       ml: 0.75,
                     },
                     borderRadius: '4px',
-                    borderColor: task.due_date ? statusColor : theme.palette.divider,
-                    color: task.due_date ? statusColor : theme.palette.text.secondary,
+                    borderColor: dueDate 
+                      ? isOverdue
+                        ? theme.palette.error.main
+                        : isDueToday
+                          ? theme.palette.warning.main
+                          : theme.palette.primary.main
+                      : theme.palette.divider,
+                    color: dueDate
+                      ? isOverdue
+                        ? theme.palette.error.main
+                        : isDueToday
+                          ? theme.palette.warning.main
+                          : theme.palette.primary.main
+                      : theme.palette.text.secondary,
                     backgroundColor: 'transparent',
                     '&:hover': {
-                      borderColor: task.due_date ? statusColor : theme.palette.primary.main,
+                      borderColor: dueDate
+                        ? isOverdue
+                          ? theme.palette.error.main
+                          : isDueToday
+                            ? theme.palette.warning.main
+                            : theme.palette.primary.main
+                        : theme.palette.primary.main,
                       backgroundColor: theme.palette.action.hover,
                       cursor: 'pointer',
                     },
@@ -634,39 +709,49 @@ const Task = ({
 
               <Tooltip
                 title={
-                  task.due_date
-                    ? `Time: ${format(new Date(task.due_date), 'h:mm a')}`
+                  dueDate
+                    ? `Time: ${format(dueDate, 'h:mm a')}`
                     : 'Set time'
                 }
-                arrow
+                placement="top"
               >
                 <Chip
                   size="small"
                   icon={<TimeIcon sx={{ fontSize: '0.875rem' }} />}
-                  label={
-                    task.due_date
-                      ? format(new Date(task.due_date), 'h:mm a')
-                      : 'Add time'
-                  }
+                  label={dueDate ? format(dueDate, 'h:mm a') : 'Add time'}
                   onClick={handleTimeClick}
                   variant="outlined"
                   sx={{
-                    maxWidth: '110px',
+                    maxWidth: '120px',
                     height: '24px',
                     '& .MuiChip-label': {
                       px: 1,
                       fontSize: '0.75rem',
                     },
-                    '& .MuiChip-icon': {
-                      fontSize: '0.875rem',
-                      ml: 0.75,
-                    },
                     borderRadius: '4px',
-                    borderColor: task.due_date ? statusColor : theme.palette.divider,
-                    color: task.due_date ? statusColor : theme.palette.text.secondary,
+                    borderColor: dueDate 
+                      ? isOverdue
+                        ? theme.palette.error.main
+                        : isDueToday
+                          ? theme.palette.warning.main
+                          : theme.palette.primary.main
+                      : theme.palette.divider,
+                    color: dueDate
+                      ? isOverdue
+                        ? theme.palette.error.main
+                        : isDueToday
+                          ? theme.palette.warning.main
+                          : theme.palette.primary.main
+                      : theme.palette.text.secondary,
                     backgroundColor: 'transparent',
                     '&:hover': {
-                      borderColor: task.due_date ? statusColor : theme.palette.primary.main,
+                      borderColor: dueDate
+                        ? isOverdue
+                          ? theme.palette.error.main
+                          : isDueToday
+                            ? theme.palette.warning.main
+                            : theme.palette.primary.main
+                        : theme.palette.primary.main,
                       backgroundColor: theme.palette.action.hover,
                       cursor: 'pointer',
                     },
@@ -722,7 +807,7 @@ const Task = ({
             >
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
-                  value={task.due_date ? new Date(task.due_date) : null}
+                  value={dueDate}
                   onChange={handleDateChange}
                   slotProps={{
                     textField: {
@@ -755,8 +840,12 @@ const Task = ({
             >
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <TimePicker
-                  value={task.due_date ? new Date(task.due_date) : null}
+                  value={tempTime}
                   onChange={handleTimeChange}
+                  onAccept={handleTimeAccept}
+                  onClose={handleTimeClose}
+                  ampm={true}
+                  views={['hours', 'minutes', 'meridiem']}
                   slotProps={{
                     textField: {
                       size: 'small',
