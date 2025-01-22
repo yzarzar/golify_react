@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Paper, 
   IconButton, 
@@ -228,6 +228,42 @@ const Task = ({
     }
   ];
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(task.title);
+
+  useEffect(() => {
+    // Start editing if this is a new task
+    if (task.title === 'New Task' && !isEditing) {
+      setIsEditing(true);
+      setEditValue(task.title);
+    }
+  }, [task.title]);
+
+  const handleEditSubmit = async () => {
+    if (editValue.trim() === "") {
+      // showAlert("Task title cannot be empty", "error");
+      setEditValue(task.title);
+      setIsEditing(false);
+      return;
+    }
+
+    if (editValue === task.title) {
+      setIsEditing(false);
+      return;
+    }
+
+    try {
+      // await onUpdateTask(task.id, { title: editValue });
+      onEdit(task.id, "title", editValue);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating task title:", error);
+      setEditValue(task.title);
+      setIsEditing(false);
+      // showAlert("Failed to update task title", "error");
+    }
+  };
+
   return (
     <Zoom in style={{ transitionDelay: '100ms' }}>
       <Paper
@@ -305,80 +341,48 @@ const Task = ({
               minWidth: 0,
             }}
           >
-            {isTitleEditing ? (
-              <ClickAwayListener onClickAway={handleTitleEditComplete}>
+            {isEditing ? (
+              <ClickAwayListener onClickAway={handleEditSubmit}>
                 <InputBase
                   fullWidth
-                  value={titleEditValue}
-                  onChange={(e) => setTitleEditValue(e.target.value)}
-                  onKeyDown={handleTitleKeyPress}
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleEditSubmit();
+                    }
+                  }}
                   autoFocus
                   sx={{
                     flex: 1,
+                    fontWeight: 500,
+                    color: theme.palette.text.primary,
                     '& input': {
-                      color: theme.palette.text.primary,
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
                       padding: '4px 8px',
-                      borderRadius: '4px',
+                      borderRadius: 1,
                       backgroundColor: theme.palette.action.hover,
-                      transition: 'all 0.2s',
-                      '&:hover, &:focus': {
-                        backgroundColor: theme.palette.action.selected,
-                      },
                     },
                   }}
                 />
               </ClickAwayListener>
             ) : (
               <Typography
-                variant="body2"
-                onClick={handleTitleEditStart}
-                onMouseEnter={() => setShowEditHint(true)}
-                onMouseLeave={() => setShowEditHint(false)}
+                variant="body1"
+                onClick={() => setIsEditing(true)}
                 sx={{
                   flex: 1,
-                  color: task.status === 'completed' ? theme.palette.text.secondary : theme.palette.text.primary,
-                  fontSize: '0.875rem',
                   fontWeight: 500,
+                  cursor: 'pointer',
                   textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  cursor: 'text',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  minWidth: 0,
+                  color: task.status === 'completed' 
+                    ? theme.palette.text.secondary 
+                    : theme.palette.text.primary,
                   '&:hover': {
-                    backgroundColor: theme.palette.action.hover,
+                    color: theme.palette.primary.main,
                   },
                 }}
               >
-                <span style={{ 
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {task.title}
-                </span>
-                {showEditHint && (
-                  <Typography
-                    component="span"
-                    sx={{
-                      ml: 1,
-                      fontSize: '0.75rem',
-                      color: theme.palette.primary.main,
-                      opacity: 0,
-                      transition: 'opacity 0.2s',
-                      whiteSpace: 'nowrap',
-                      '&:hover': {
-                        opacity: 0.7,
-                      },
-                    }}
-                  >
-                    Click to edit
-                  </Typography>
-                )}
+                {task.title}
               </Typography>
             )}
           </Box>

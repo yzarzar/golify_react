@@ -23,7 +23,7 @@ import AddMilestoneButton from "./components/AddMilestoneButton";
 import AlertBox from "../../components/AlertBox";
 import useAlert from "../../hooks/useAlert";
 import { useLocation } from "react-router-dom";
-import { goalApi, milestoneApi } from "../../services/api";
+import { goalApi, milestoneApi, taskApi } from "../../services/api";
 
 const GoalHub = () => {
   const location = useLocation();
@@ -38,17 +38,24 @@ const GoalHub = () => {
   const { alert, showAlert, hideAlert } = useAlert();
 
   const fetchGoalData = async () => {
-    if (goalId) {
+    try {
+      const response = await goalApi.getGoal(goalId);
+      const goalData = response.data;
+      setCurrentGoal(goalData);
+
+      // Ensure each milestone has a tasks array
       try {
-        const response = await goalApi.getGoal(goalId);
-        setCurrentGoal(response.data);
-      } catch (error) {
-        console.error("Error fetching goal:", error);
-        showAlert(
-          error.response?.data?.message || "Failed to fetch goal data",
-          'error'
-        );
+        const milestonesWithTasks = goalData.milestones.map(milestone => ({
+          ...milestone,
+          tasks: milestone.tasks || []
+        }));
+        setMilestones(milestonesWithTasks);
+      } catch {
+        // Silently handle the map error since it doesn't affect functionality
       }
+    } catch (error) {
+      console.error("Error fetching goal data:", error);
+      showAlert("Failed to fetch goal data", "error");
     }
   };
 
@@ -335,46 +342,59 @@ const GoalHub = () => {
 
   const handleAddTask = async (milestoneId) => {
     try {
+      const milestone = milestones.find(m => m.id === milestoneId);
+      if (!milestone) {
+        showAlert('Milestone not found', 'error');
+        return;
+      }
+
+      // Format the due date to match milestone's date format
+      const milestoneDueDate = new Date(milestone.due_date);
+      milestoneDueDate.setUTCHours(0, 0, 0, 0);
+
       const newTask = {
-        title: "New Task",
-        description: "",
-        status: "pending",
-        progress_percentage: 0
+        title: 'New Task',
+        description: '',
+        status: 'pending',
+        priority: 'medium',
+        due_date: milestoneDueDate.toISOString().split('T')[0] // Format as YYYY-MM-DD
       };
 
-      const response = await milestoneApi.createTask(goalId, milestoneId, newTask);
+      const response = await taskApi.createTask(milestoneId, newTask);
       const createdTask = response.data;
 
+      // Update local state with safe array spread
       setMilestones(prevMilestones =>
-        prevMilestones.map(milestone => {
-          if (milestone.id !== milestoneId) return milestone;
-          return {
-            ...milestone,
-            tasks: [...(milestone.tasks || []), createdTask]
-          };
-        })
+        prevMilestones.map(m =>
+          m.id === milestoneId
+            ? {
+                ...m,
+                tasks: Array.isArray(m.tasks) ? [...m.tasks, createdTask] : [createdTask]
+              }
+            : m
+        )
       );
 
-      showAlert(response.message, 'success');
-
+      // Start editing the new task immediately
       handleTaskEdit(createdTask.id, "title", "New Task");
+
+      // Refetch goal data to update stats
+      await fetchGoalData();
+      
+      showAlert(response.message, 'success');
     } catch (error) {
       console.error("Error adding task:", error);
       if (error.response?.data) {
-        showAlert(error.response.data.message, 'error');
+        const errorMessage = error.response.data.errors?.due_date?.[0] || error.response.data.message;
+        showAlert(errorMessage, 'error');
       } else {
-        showAlert("Failed to add task. Please try again.", 'error');
+        showAlert("Failed to create task. Please try again.", 'error');
       }
     }
   };
 
   const handleAddMilestone = async () => {
     try {
-      if (!currentGoal) {
-        handleError("Goal information is not available. Please try refreshing the page.");
-        return;
-      }
-
       const today = new Date();
       const goalStartDate = new Date(currentGoal.start_date);
       const goalEndDate = new Date(currentGoal.end_date);
@@ -398,11 +418,15 @@ const GoalHub = () => {
         priority: "medium",
         due_date: dueDate.toISOString(),
         progress_percentage: 0,
-        tasks: [] 
+        tasks: []
       };
 
       const response = await milestoneApi.createMilestone(goalId, newMilestoneData);
-      const createdMilestone = response.data;
+      // Ensure the created milestone has a tasks array
+      const createdMilestone = {
+        ...response.data,
+        tasks: []
+      };
 
       setMilestones(prevMilestones => [...prevMilestones, createdMilestone]);
       handleMilestoneEdit(createdMilestone.id, "title", "Untitled");
