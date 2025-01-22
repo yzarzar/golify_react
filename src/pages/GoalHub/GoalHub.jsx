@@ -128,16 +128,29 @@ const GoalHub = () => {
       }
 
       // Update local state immediately
-      setMilestones(prevMilestones =>
-        prevMilestones.map(m => ({
+      setMilestones(prevMilestones => {
+        const updatedMilestones = prevMilestones.map(m => ({
           ...m,
           tasks: m.tasks?.map(task =>
             task.id === id
               ? { ...task, [field]: value }
               : task
           ) || []
-        }))
-      );
+        }));
+
+        // Sort tasks by priority if priority was updated
+        if (field === 'priority') {
+          return updatedMilestones.map(m => ({
+            ...m,
+            tasks: [...(m.tasks || [])].sort((a, b) => {
+              const priorityOrder = { high: 0, medium: 1, low: 2 };
+              return priorityOrder[a.priority.toLowerCase()] - priorityOrder[b.priority.toLowerCase()];
+            })
+          }));
+        }
+
+        return updatedMilestones;
+      });
 
       // Refetch goal data to update stats
       await fetchGoalData();
@@ -314,9 +327,23 @@ const GoalHub = () => {
       setMilestones(prevMilestones =>
         prevMilestones.map(milestone => {
           if (milestone.id !== milestoneId) return milestone;
+          
+          // Filter out the deleted task
+          const updatedTasks = milestone.tasks.filter(task => task.id !== taskId);
+          
+          // Calculate new milestone progress based on remaining tasks
+          const totalTasks = updatedTasks.length;
+          const completedTasks = updatedTasks.filter(task => task.status === 'completed').length;
+          const newProgress = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+          
+          // Determine new milestone status
+          const newStatus = totalTasks === 0 || newProgress < 100 ? 'pending' : 'completed';
+          
           return {
             ...milestone,
-            tasks: milestone.tasks.filter(task => task.id !== taskId)
+            tasks: updatedTasks,
+            progress_percentage: newProgress,
+            status: newStatus
           };
         })
       );
@@ -332,6 +359,9 @@ const GoalHub = () => {
       } else {
         handleError("Failed to delete task. Please try again.");
       }
+      
+      // Revert the local state on error by re-fetching
+      await fetchGoalData();
     }
   };
 

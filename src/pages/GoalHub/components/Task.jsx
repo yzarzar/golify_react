@@ -105,6 +105,7 @@ const Task = ({
   const [timeAnchorEl, setTimeAnchorEl] = useState(null);
   const [priorityAnchorEl, setPriorityAnchorEl] = useState(null);
   const [title, setTitle] = useState(task.title);
+  const [priority, setPriority] = useState(task.priority);
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
@@ -116,7 +117,11 @@ const Task = ({
     setDescription(task.description || '');
   }, [task.description]);
 
-  const priorityColor = priorityColors[isDark ? 'dark' : 'light'][task.priority.toLowerCase()];
+  useEffect(() => {
+    setPriority(task.priority);
+  }, [task.priority]);
+
+  const priorityColor = priorityColors[isDark ? 'dark' : 'light'][priority.toLowerCase()];
   const statusColor = statusColors[isDark ? 'dark' : 'light'][task.status];
 
   const dueDate = task.due_date ? new Date(task.due_date) : null;
@@ -125,18 +130,18 @@ const Task = ({
 
   const handleTitleEditStart = () => {
     setIsTitleEditing(true);
-    setTitleEditValue(task.title);
+    setTitleEditValue(title);
     setShowEditHint(false);
   };
 
   const handleTitleEditComplete = async () => {
     if (titleEditValue.trim() === "") {
-      setTitleEditValue(task.title);
+      setTitleEditValue(title);
       setIsTitleEditing(false);
       return;
     }
 
-    if (titleEditValue === task.title) {
+    if (titleEditValue === title) {
       setIsTitleEditing(false);
       return;
     }
@@ -149,11 +154,12 @@ const Task = ({
       await onEdit(task.id, "title", trimmedTitle);
       // Finally update local state
       setTitle(trimmedTitle);
+      setTitleEditValue(trimmedTitle);
       setIsTitleEditing(false);
     } catch (error) {
       console.error("Error updating task title:", error);
-      setTitleEditValue(task.title);
-      setTitle(task.title);
+      setTitleEditValue(title);
+      setTitle(title);
       setIsTitleEditing(false);
     }
   };
@@ -249,9 +255,21 @@ const Task = ({
     setPriorityAnchorEl(null);
   };
 
-  const handlePrioritySelect = (priority) => {
-    onEdit(task.id, "priority", priority);
-    handlePriorityClose();
+  const handlePrioritySelect = async (newPriority) => {
+    try {
+      // First make the API call to update the backend
+      await taskApi.updateTask(task.milestone_id, task.id, { priority: newPriority });
+      // Then notify parent component to update its state
+      await onEdit(task.id, "priority", newPriority);
+      // Finally update local state
+      setPriority(newPriority);
+      handlePriorityClose();
+    } catch (error) {
+      console.error("Error updating task priority:", error);
+      setPriority(task.priority);
+      handlePriorityClose();
+      // You might want to show an error message here
+    }
   };
 
   const isPriorityMenuOpen = Boolean(priorityAnchorEl);
@@ -402,13 +420,16 @@ const Task = ({
                   onKeyDown={handleTitleKeyPress}
                   autoFocus
                   sx={{
-                    flex: 1,
-                    fontWeight: 500,
-                    color: theme.palette.text.primary,
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    backgroundColor: theme.palette.action.hover,
                     '& input': {
-                      padding: '4px 8px',
-                      borderRadius: 1,
-                      backgroundColor: theme.palette.action.hover,
+                      color: theme.palette.text.primary,
+                      fontWeight: 500,
+                      fontSize: '0.875rem',
+                    },
+                    '&:hover, &:focus-within': {
+                      backgroundColor: theme.palette.action.selected,
                     },
                   }}
                 />
@@ -653,23 +674,31 @@ const Task = ({
                 />
               </Tooltip>
 
-              <Tooltip title="Set priority" arrow TransitionComponent={Zoom}>
-                <IconButton
-                  size="small"
-                  onClick={handlePriorityClick}
-                  sx={{
-                    bgcolor: priorityColor.light,
-                    border: `1px solid ${priorityColor.border}`,
-                    color: priorityColor.main,
-                    '&:hover': {
-                      bgcolor: priorityColor.light,
-                      opacity: 0.9,
-                    }
-                  }}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                <Tooltip 
+                  title={`Priority: ${priority}`}
+                  placement="top"
                 >
-                  <FlagIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+                  <IconButton
+                    size="small"
+                    onClick={handlePriorityClick}
+                    sx={{
+                      color: priorityColors[isDark ? 'dark' : 'light'][priority.toLowerCase()].main,
+                      '&:hover': {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                    }}
+                  >
+                    <FlagIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
             </Stack>
 
             <Popover
